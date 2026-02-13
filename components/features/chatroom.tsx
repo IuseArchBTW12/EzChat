@@ -63,7 +63,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
             Chatroom Not Found
           </h2>
           <p className="text-gray-600 mb-4">
-            The chatroom "{roomname}" doesn't exist yet
+            The chatroom &quot;{roomname}&quot; doesn&apos;t exist yet
           </p>
           <Button onClick={() => router.push("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />

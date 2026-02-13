@@ -62,7 +62,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       mounted = false;
       localStream?.getTracks().forEach((track) => track.stop());
     };
-  }, []);
+  }, [localStream]);
 
   // Set local video
   useEffect(() => {

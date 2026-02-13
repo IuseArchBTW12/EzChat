@@ -49,7 +49,7 @@ export function CTA() {
 
         <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
           Claim your username now and start building your video chatroom community today. 
-          It's free to get started, no credit card required.
+          It&apos;s free to get started, no credit card required.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

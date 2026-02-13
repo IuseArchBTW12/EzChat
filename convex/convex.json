@@ -1,0 +1,5 @@
+[deployment]
+node_version = "18"
+
+[auth]
+clerk = true

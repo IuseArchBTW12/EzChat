@@ -20,6 +20,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   );
   
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const peersRef = useRef<Map<string, Peer.Instance>>(new Map());
   const sendSignal = useMutation(api.webrtc.sendSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
   const signals = useQuery(api.webrtc.getSignals, { roomName: roomname });
@@ -88,6 +89,110 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       }
     };
   }, [localStream, currentUser, roomname, toggleCamera]);
+
+  // Create peer connections for other participants
+  useEffect(() => {
+    if (!localStream || !currentUser) return;
+
+    const otherParticipants = participants.filter(
+      (p) => p.user && p.user._id !== currentUser._id && p.hasCameraOn
+    );
+
+    otherParticipants.forEach((participant) => {
+      const username = participant.user.username;
+      
+      // Skip if peer already exists
+      if (peersRef.current.has(username)) return;
+
+      // Create new peer connection (initiator = true for alphabetically lower username)
+      const shouldInitiate = currentUser.username < username;
+      
+      const peer = new Peer({
+        initiator: shouldInitiate,
+        stream: localStream,
+        trickle: false,
+      });
+
+      peer.on("signal", (signalData) => {
+        sendSignal({
+          roomName: roomname,
+          toUsername: username,
+          signal: JSON.stringify(signalData),
+          type: signalData.type === "offer" ? "offer" : "answer",
+        }).catch((err) => console.error("Failed to send signal:", err));
+      });
+
+      peer.on("stream", (remoteStream) => {
+        console.log(`Received stream from ${username}`);
+        setRemoteStreams((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(username, remoteStream);
+          return newMap;
+        });
+        
+        // Assign stream to video element
+        const videoElement = videoRefs.current.get(username);
+        if (videoElement) {
+          videoElement.srcObject = remoteStream;
+        }
+      });
+
+      peer.on("error", (err) => {
+        console.error(`Peer error with ${username}:`, err);
+      });
+
+      peersRef.current.set(username, peer);
+      setPeers(new Map(peersRef.current));
+    });
+
+    // Clean up peers for participants who left
+    peersRef.current.forEach((peer, username) => {
+      const stillPresent = otherParticipants.some(
+        (p) => p.user?.username === username
+      );
+      if (!stillPresent) {
+        peer.destroy();
+        peersRef.current.delete(username);
+        setRemoteStreams((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(username);
+          return newMap;
+        });
+      }
+    });
+
+    setPeers(new Map(peersRef.current));
+  }, [participants, localStream, currentUser, roomname, sendSignal]);
+
+  // Handle incoming signals
+  useEffect(() => {
+    if (!signals || !currentUser) return;
+
+    signals.forEach((signalData) => {
+      const fromUsername = signalData.fromUser?.username;
+      if (!fromUsername) return;
+
+      const peer = peersRef.current.get(fromUsername);
+      if (!peer) return;
+
+      try {
+        const signal = JSON.parse(signalData.signal);
+        peer.signal(signal);
+      } catch (err) {
+        console.error("Failed to process signal:", err);
+      }
+    });
+  }, [signals, currentUser]);
+
+  // Assign remote streams to video elements
+  useEffect(() => {
+    remoteStreams.forEach((stream, username) => {
+      const videoElement = videoRefs.current.get(username);
+      if (videoElement && videoElement.srcObject !== stream) {
+        videoElement.srcObject = stream;
+      }
+    });
+  }, [remoteStreams]);
 
   // Calculate grid layout
   const visibleParticipants = participants.slice(0, maxVideos);

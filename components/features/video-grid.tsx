@@ -94,10 +94,10 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
 
       {localStream && (
         <div
-          className="grid h-full gap-2"
+          className="grid gap-4 w-full h-full content-start p-4"
           style={{
-            gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-            gridTemplateRows: `repeat(${gridRows}, 1fr)`,
+            gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+            gridAutoRows: 'min-content',
           }}
         >
           {visibleParticipants.map((participant) => {
@@ -110,6 +110,9 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
               <div
                 key={participant._id}
                 className="relative bg-gray-800 rounded-lg overflow-hidden"
+                style={{
+                  aspectRatio: '16 / 9',
+                }}
               >
                 <video
                   ref={(el) => {
@@ -118,7 +121,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                   autoPlay
                   playsInline
                   muted={isCurrentUser}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black"
                 />
                 
                 {/* User label */}

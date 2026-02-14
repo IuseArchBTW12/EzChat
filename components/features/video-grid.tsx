@@ -62,13 +62,13 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       mounted = false;
       localStream?.getTracks().forEach((track) => track.stop());
     };
-  }, [localStream]);
+  }, []); // Empty array - only run once on mount
 
   // Set local video
   useEffect(() => {
     if (localStream && currentUser) {
       const videoElement = videoRefs.current.get(currentUser.username);
-      if (videoElement) {
+      if (videoElement && videoElement.srcObject !== localStream) {
         videoElement.srcObject = localStream;
       }
     }

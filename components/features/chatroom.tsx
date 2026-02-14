@@ -21,11 +21,31 @@ export function Chatroom({ roomname }: ChatroomProps) {
   const chatroom = useQuery(api.chatrooms.getChatroomByName, { name: roomname });
   const participants = useQuery(api.chatrooms.getChatroomParticipants, { roomName: roomname });
   const currentUser = useQuery(api.users.getCurrentUser);
+  const getOrCreateChatroom = useMutation(api.chatrooms.getOrCreateChatroom);
   const joinChatroom = useMutation(api.chatrooms.joinChatroom);
   const leaveChatroom = useMutation(api.chatrooms.leaveChatroom);
 
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Auto-create chatroom if it doesn't exist
+  useEffect(() => {
+    if (user && chatroom === null && !isCreating) {
+      setIsCreating(true);
+      getOrCreateChatroom({ name: roomname })
+        .then(() => {
+          console.log(`Chatroom ${roomname} created or found`);
+        })
+        .catch((err) => {
+          console.error("Failed to create chatroom:", err);
+          setError(err.message);
+        })
+        .finally(() => {
+          setIsCreating(false);
+        });
+    }
+  }, [user, chatroom, roomname, isCreating, getOrCreateChatroom]);
 
   useEffect(() => {
     if (user && chatroom && !hasJoined) {
@@ -54,6 +74,22 @@ export function Chatroom({ roomname }: ChatroomProps) {
       }
     };
   }, [user, chatroom, roomname, hasJoined, currentUser, joinChatroom, leaveChatroom]);
+
+  // Show loading state while creating chatroom
+  if (isCreating || chatroom === undefined) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {isCreating ? "Creating Chatroom..." : "Loading..."}
+          </h2>
+          <p className="text-gray-600">
+            {isCreating ? `Setting up ${roomname}` : "Please wait"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!chatroom) {
     return (

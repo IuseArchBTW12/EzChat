@@ -46,6 +46,7 @@ export default defineSchema({
     ),
     joinedAt: v.number(),
     isOnline: v.boolean(),
+    hasCameraOn: v.boolean(), // Track if user has camera enabled
   })
     .index("by_room", ["roomId"])
     .index("by_user", ["userId"])

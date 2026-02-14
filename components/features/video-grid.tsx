@@ -21,6 +21,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const sendSignal = useMutation(api.webrtc.sendSignal);
+  const toggleCamera = useMutation(api.chatrooms.toggleCamera);
   const signals = useQuery(api.webrtc.getSignals, { roomName: roomname });
 
   const maxCams = getMaxCams(currentUser?.tier || "free");
@@ -64,15 +65,29 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     };
   }, []); // Empty array - only run once on mount
 
-  // Set local video
+  // Set local video and notify server camera is on
   useEffect(() => {
     if (localStream && currentUser) {
       const videoElement = videoRefs.current.get(currentUser.username);
       if (videoElement && videoElement.srcObject !== localStream) {
         videoElement.srcObject = localStream;
       }
+      
+      // Notify server that camera is on
+      toggleCamera({ roomName: roomname, hasCameraOn: true }).catch((err) => {
+        console.error("Failed to toggle camera status:", err);
+      });
     }
-  }, [localStream, currentUser]);
+    
+    // Cleanup: Turn camera off when component unmounts or stream is lost
+    return () => {
+      if (currentUser) {
+        toggleCamera({ roomName: roomname, hasCameraOn: false }).catch((err) => {
+          console.error("Failed to toggle camera status:", err);
+        });
+      }
+    };
+  }, [localStream, currentUser, roomname, toggleCamera]);
 
   // Calculate grid layout
   const visibleParticipants = participants.slice(0, maxVideos);

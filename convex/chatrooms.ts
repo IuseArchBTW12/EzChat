@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
-// Get all active chatrooms for directory
+// Get all active chatrooms for directory (only show rooms with at least one camera on)
 export const getAllChatrooms = query({
   handler: async (ctx) => {
     const chatrooms = await ctx.db
@@ -9,7 +9,7 @@ export const getAllChatrooms = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
-    // Get participant counts for each room
+    // Get participant counts for each room and filter by camera status
     const chatroomsWithCounts = await Promise.all(
       chatrooms.map(async (room) => {
         const participants = await ctx.db
@@ -18,17 +18,72 @@ export const getAllChatrooms = query({
           .filter((q) => q.eq(q.field("isOnline"), true))
           .collect();
 
+        const participantsWithCamera = participants.filter((p) => p.hasCameraOn);
         const owner = await ctx.db.get(room.ownerId);
 
         return {
           ...room,
           participantCount: participants.length,
+          cameraCount: participantsWithCamera.length,
           ownerUsername: owner?.username || "Unknown",
         };
       })
     );
 
-    return chatroomsWithCounts;
+    // Only return rooms with at least one person on camera
+    return chatroomsWithCounts.filter((room) => room.cameraCount > 0);
+  },
+});
+
+// Get or create chatroom by name
+export const getOrCreateChatroom = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    // Validate roomname (ALL CAPS, A-Z only)
+    if (!/^[A-Z]+$/.test(args.name)) {
+      throw new Error("Chatroom name must be all capital letters (A-Z) only");
+    }
+
+    // Check if chatroom exists
+    const existing = await ctx.db
+      .query("chatrooms")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    // Get current user to be the owner
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    // Create new chatroom
+    const roomId = await ctx.db.insert("chatrooms", {
+      name: args.name,
+      ownerId: user._id,
+      isActive: true,
+      createdAt: Date.now(),
+    });
+
+    // Add creator as owner participant
+    await ctx.db.insert("roomParticipants", {
+      roomId,
+      userId: user._id,
+      role: "owner",
+      joinedAt: Date.now(),
+      isOnline: false,
+      hasCameraOn: false,
+    });
+
+    return roomId;
   },
 });
 
@@ -113,6 +168,7 @@ export const joinChatroom = mutation({
       role: "guest",
       joinedAt: Date.now(),
       isOnline: true,
+      hasCameraOn: false, // Camera off by default
     });
 
     return participantId;
@@ -205,5 +261,44 @@ export const getChatroomParticipants = query({
       });
 
     return visibleParticipants;
+  },
+});
+
+// Toggle camera status
+export const toggleCamera = mutation({
+  args: {
+    roomName: v.string(),
+    hasCameraOn: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    const chatroom = await ctx.db
+      .query("chatrooms")
+      .withIndex("by_name", (q) => q.eq("name", args.roomName))
+      .first();
+
+    if (!chatroom) throw new Error("Chatroom not found");
+
+    const participant = await ctx.db
+      .query("roomParticipants")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", chatroom._id).eq("userId", user._id)
+      )
+      .first();
+
+    if (participant) {
+      await ctx.db.patch(participant._id, {
+        hasCameraOn: args.hasCameraOn,
+      });
+    }
   },
 });

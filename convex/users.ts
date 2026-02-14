@@ -34,7 +34,7 @@ export const getOrCreateUser = mutation({
   },
 });
 
-// Claim a username (creates chatroom)
+// Claim a username (no longer creates chatroom - chatrooms auto-create on visit)
 export const claimUsername = mutation({
   args: {
     username: v.string(),
@@ -48,13 +48,13 @@ export const claimUsername = mutation({
       throw new Error("Username must be all capital letters (A-Z) only");
     }
 
-    // Check if username is already taken
-    const existingChatroom = await ctx.db
-      .query("chatrooms")
-      .withIndex("by_name", (q) => q.eq("name", args.username))
+    // Check if username is already taken by another user
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", args.username))
       .first();
 
-    if (existingChatroom) {
+    if (existingUser) {
       throw new Error("Username already taken");
     }
 
@@ -71,29 +71,12 @@ export const claimUsername = mutation({
       throw new Error("You already have a username");
     }
 
-    // Update user with username
+    // Update user with username (chatroom will be auto-created when they visit it)
     await ctx.db.patch(user._id, {
       username: args.username,
     });
 
-    // Create chatroom
-    const roomId = await ctx.db.insert("chatrooms", {
-      name: args.username,
-      ownerId: user._id,
-      isActive: true,
-      createdAt: Date.now(),
-    });
-
-    // Add user as owner in roomParticipants
-    await ctx.db.insert("roomParticipants", {
-      roomId,
-      userId: user._id,
-      role: "owner",
-      joinedAt: Date.now(),
-      isOnline: false,
-    });
-
-    return roomId;
+    return user._id;
   },
 });
 

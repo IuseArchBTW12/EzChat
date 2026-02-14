@@ -21,7 +21,9 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const peersRef = useRef<Map<string, Peer.Instance>>(new Map());
+  const processedSignals = useRef<Set<string>>(new Set());
   const sendSignal = useMutation(api.webrtc.sendSignal);
+  const deleteSignal = useMutation(api.webrtc.deleteSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
   const signals = useQuery(api.webrtc.getSignals, { roomName: roomname });
 
@@ -98,14 +100,21 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       (p) => p.user && p.user._id !== currentUser._id && p.hasCameraOn
     );
 
+    console.log(`[WebRTC] Current user: ${currentUser.username}, Other participants with camera:`, otherParticipants.map(p => p.user.username));
+
     otherParticipants.forEach((participant) => {
       const username = participant.user.username;
       
       // Skip if peer already exists
-      if (peersRef.current.has(username)) return;
+      if (peersRef.current.has(username)) {
+        console.log(`[WebRTC] Peer already exists for ${username}`);
+        return;
+      }
 
       // Create new peer connection (initiator = true for alphabetically lower username)
       const shouldInitiate = currentUser.username < username;
+      
+      console.log(`[WebRTC] Creating peer for ${username}, shouldInitiate: ${shouldInitiate}`);
       
       const peer = new Peer({
         initiator: shouldInitiate,
@@ -114,6 +123,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       });
 
       peer.on("signal", (signalData) => {
+        console.log(`[WebRTC] Sending signal to ${username}, type: ${signalData.type}`);
         sendSignal({
           roomName: roomname,
           toUsername: username,
@@ -123,7 +133,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       });
 
       peer.on("stream", (remoteStream) => {
-        console.log(`Received stream from ${username}`);
+        console.log(`[WebRTC] ✅ Received stream from ${username}`);
         setRemoteStreams((prev) => {
           const newMap = new Map(prev);
           newMap.set(username, remoteStream);
@@ -133,12 +143,17 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
         // Assign stream to video element
         const videoElement = videoRefs.current.get(username);
         if (videoElement) {
+          console.log(`[WebRTC] Assigning stream to video element for ${username}`);
           videoElement.srcObject = remoteStream;
         }
       });
 
+      peer.on("connect", () => {
+        console.log(`[WebRTC] ✅ Connected to ${username}`);
+      });
+
       peer.on("error", (err) => {
-        console.error(`Peer error with ${username}:`, err);
+        console.error(`[WebRTC] ❌ Peer error with ${username}:`, err);
       });
 
       peersRef.current.set(username, peer);
@@ -151,6 +166,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
         (p) => p.user?.username === username
       );
       if (!stillPresent) {
+        console.log(`[WebRTC] Cleaning up peer for ${username} (left room)`);
         peer.destroy();
         peersRef.current.delete(username);
         setRemoteStreams((prev) => {
@@ -172,17 +188,31 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       const fromUsername = signalData.fromUser?.username;
       if (!fromUsername) return;
 
+      // Skip already processed signals
+      const signalKey = `${signalData._id}`;
+      if (processedSignals.current.has(signalKey)) return;
+
       const peer = peersRef.current.get(fromUsername);
-      if (!peer) return;
+      if (!peer) {
+        console.log(`[WebRTC] No peer found for ${fromUsername}, cannot process signal`);
+        return;
+      }
 
       try {
         const signal = JSON.parse(signalData.signal);
+        console.log(`[WebRTC] Processing signal from ${fromUsername}, type: ${signal.type}`);
         peer.signal(signal);
+        processedSignals.current.add(signalKey);
+        
+        // Delete signal after processing
+        deleteSignal({ signalId: signalData._id }).catch((err) => {
+          console.error("Failed to delete signal:", err);
+        });
       } catch (err) {
-        console.error("Failed to process signal:", err);
+        console.error(`[WebRTC] Failed to process signal from ${fromUsername}:`, err);
       }
     });
-  }, [signals, currentUser]);
+  }, [signals, currentUser, deleteSignal]);
 
   // Assign remote streams to video elements
   useEffect(() => {

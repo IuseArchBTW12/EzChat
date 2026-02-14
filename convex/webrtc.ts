@@ -88,6 +88,14 @@ export const getSignals = query({
   },
 });
 
+// Delete signal after consumption
+export const deleteSignal = mutation({
+  args: { signalId: v.id("webrtcSignals") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.signalId);
+  },
+});
+
 // Clear old signals (cleanup)
 export const clearSignals = mutation({
   args: { roomName: v.string() },

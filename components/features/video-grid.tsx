@@ -94,7 +94,11 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     if (!localStream || !currentUser) return;
 
     const otherParticipants = participants.filter(
-      (p) => p.user && p.user._id !== currentUser._id && p.hasCameraOn === true
+      (p) => p.user && 
+             p.user._id !== currentUser._id && 
+             p.user.username && 
+             p.user.username.trim() !== '' && 
+             p.hasCameraOn === true
     );
 
     console.log(`[WebRTC] Current user: ${currentUser.username}, Other participants with camera:`, otherParticipants.map(p => p.user.username));
@@ -213,13 +217,19 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
 
   // Assign remote streams to video elements
   useEffect(() => {
+    console.log(`[WebRTC] Assigning streams to video elements. Remote streams:`, Array.from(remoteStreams.keys()));
     remoteStreams.forEach((stream, username) => {
       const videoElement = videoRefs.current.get(username);
-      if (videoElement && videoElement.srcObject !== stream) {
-        videoElement.srcObject = stream;
+      if (videoElement) {
+        if (videoElement.srcObject !== stream) {
+          console.log(`[WebRTC] Setting srcObject for ${username}`);
+          videoElement.srcObject = stream;
+        }
+      } else {
+        console.log(`[WebRTC] ❌ No video element found for ${username}`);
       }
     });
-  }, [remoteStreams]);
+  }, [remoteStreams, participants]); // Add participants to re-run when DOM updates
 
   // Calculate grid layout
   const visibleParticipants = participants.slice(0, maxVideos);
@@ -263,7 +273,20 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
               >
                 <video
                   ref={(el) => {
-                    if (el) videoRefs.current.set(user.username, el);
+                    if (el) {
+                      videoRefs.current.set(user.username, el);
+                      console.log(`[WebRTC] Video element mounted for ${user.username}`);
+                      
+                      // Check if we already have a stream for this user
+                      const stream = remoteStreams.get(user.username);
+                      if (stream && el.srcObject !== stream) {
+                        console.log(`[WebRTC] Immediately assigning existing stream to ${user.username}`);
+                        el.srcObject = stream;
+                      } else if (isCurrentUser && localStream && el.srcObject !== localStream) {
+                        console.log(`[WebRTC] Immediately assigning local stream to ${user.username}`);
+                        el.srcObject = localStream;
+                      }
+                    }
                   }}
                   autoPlay
                   playsInline

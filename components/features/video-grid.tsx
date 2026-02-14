@@ -22,6 +22,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const peersRef = useRef<Map<string, Peer.Instance>>(new Map());
   const processedSignals = useRef<Set<string>>(new Set());
+  const cameraStatusSet = useRef(false);
   const sendSignal = useMutation(api.webrtc.sendSignal);
   const deleteSignal = useMutation(api.webrtc.deleteSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
@@ -70,26 +71,22 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
 
   // Set local video and notify server camera is on
   useEffect(() => {
-    if (localStream && currentUser) {
+    if (localStream && currentUser && !cameraStatusSet.current) {
       const videoElement = videoRefs.current.get(currentUser.username);
       if (videoElement && videoElement.srcObject !== localStream) {
         videoElement.srcObject = localStream;
       }
       
-      // Notify server that camera is on
-      toggleCamera({ roomName: roomname, hasCameraOn: true }).catch((err) => {
-        console.error("Failed to toggle camera status:", err);
-      });
-    }
-    
-    // Cleanup: Turn camera off when component unmounts or stream is lost
-    return () => {
-      if (currentUser) {
-        toggleCamera({ roomName: roomname, hasCameraOn: false }).catch((err) => {
+      // Notify server that camera is on (only once)
+      console.log(`[WebRTC] Setting camera ON for ${currentUser.username}`);
+      toggleCamera({ roomName: roomname, hasCameraOn: true })
+        .then(() => {
+          cameraStatusSet.current = true;
+        })
+        .catch((err) => {
           console.error("Failed to toggle camera status:", err);
         });
-      }
-    };
+    }
   }, [localStream, currentUser, roomname, toggleCamera]);
 
   // Create peer connections for other participants
@@ -97,7 +94,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     if (!localStream || !currentUser) return;
 
     const otherParticipants = participants.filter(
-      (p) => p.user && p.user._id !== currentUser._id && p.hasCameraOn
+      (p) => p.user && p.user._id !== currentUser._id && p.hasCameraOn === true
     );
 
     console.log(`[WebRTC] Current user: ${currentUser.username}, Other participants with camera:`, otherParticipants.map(p => p.user.username));

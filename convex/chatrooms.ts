@@ -18,7 +18,7 @@ export const getAllChatrooms = query({
           .filter((q) => q.eq(q.field("isOnline"), true))
           .collect();
 
-        const participantsWithCamera = participants.filter((p) => p.hasCameraOn);
+        const participantsWithCamera = participants.filter((p) => p.hasCameraOn === true);
         const owner = await ctx.db.get(room.ownerId);
 
         return {
@@ -224,6 +224,7 @@ export const leaveChatroom = mutation({
     if (participant) {
       await ctx.db.patch(participant._id, {
         isOnline: false,
+        hasCameraOn: false, // Turn off camera when leaving
       });
     }
   },

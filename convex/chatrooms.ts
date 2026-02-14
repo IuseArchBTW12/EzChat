@@ -35,7 +35,7 @@ export const getAllChatrooms = query({
   },
 });
 
-// Get or create chatroom by name
+// Get or create chatroom by name (only owner can create their named chatroom)
 export const getOrCreateChatroom = mutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
@@ -57,26 +57,42 @@ export const getOrCreateChatroom = mutation({
       return existing._id;
     }
 
-    // Get current user to be the owner
-    const user = await ctx.db
+    // Get current user
+    const currentUser = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
       .first();
 
-    if (!user) throw new Error("User not found");
+    if (!currentUser) throw new Error("User not found");
+
+    // Check if someone has claimed this username
+    const usernameOwner = await ctx.db
+      .query("users")
+      .withIndex("by_username", (q) => q.eq("username", args.name))
+      .first();
+
+    // Only allow creation if:
+    // 1. Current user has claimed this username, OR
+    // 2. No one has claimed it yet (guest room)
+    if (usernameOwner && usernameOwner._id !== currentUser._id) {
+      throw new Error("This chatroom name is reserved by another user");
+    }
+
+    // Determine owner: username claimer or current user (for guest rooms)
+    const ownerId = usernameOwner?._id || currentUser._id;
 
     // Create new chatroom
     const roomId = await ctx.db.insert("chatrooms", {
       name: args.name,
-      ownerId: user._id,
+      ownerId,
       isActive: true,
       createdAt: Date.now(),
     });
 
-    // Add creator as owner participant
+    // Add owner as participant
     await ctx.db.insert("roomParticipants", {
       roomId,
-      userId: user._id,
+      userId: ownerId,
       role: "owner",
       joinedAt: Date.now(),
       isOnline: false,

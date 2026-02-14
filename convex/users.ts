@@ -34,7 +34,7 @@ export const getOrCreateUser = mutation({
   },
 });
 
-// Claim a username (no longer creates chatroom - chatrooms auto-create on visit)
+// Claim a username (creates chatroom and makes user the owner)
 export const claimUsername = mutation({
   args: {
     username: v.string(),
@@ -71,12 +71,30 @@ export const claimUsername = mutation({
       throw new Error("You already have a username");
     }
 
-    // Update user with username (chatroom will be auto-created when they visit it)
+    // Update user with username
     await ctx.db.patch(user._id, {
       username: args.username,
     });
 
-    return user._id;
+    // Create chatroom with user as owner
+    const roomId = await ctx.db.insert("chatrooms", {
+      name: args.username,
+      ownerId: user._id,
+      isActive: true,
+      createdAt: Date.now(),
+    });
+
+    // Add user as owner in roomParticipants
+    await ctx.db.insert("roomParticipants", {
+      roomId,
+      userId: user._id,
+      role: "owner",
+      joinedAt: Date.now(),
+      isOnline: false,
+      hasCameraOn: false,
+    });
+
+    return roomId;
   },
 });
 

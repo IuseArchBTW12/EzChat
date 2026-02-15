@@ -23,6 +23,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const peersRef = useRef<Map<string, Peer.Instance>>(new Map());
   const processedSignals = useRef<Set<string>>(new Set());
   const cameraStatusSet = useRef(false);
+  const assignedStreams = useRef<Map<string, string>>(new Map()); // Track username -> streamId to prevent duplicate assignments
   const sendSignal = useMutation(api.webrtc.sendSignal);
   const deleteSignal = useMutation(api.webrtc.deleteSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
@@ -148,33 +149,27 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
         // Immediately assign stream to video element if it exists
         setTimeout(() => {
           const videoElement = videoRefs.current.get(username);
-          if (videoElement) {
-            console.log(`[WebRTC] 🎥 Immediately assigning received stream to ${username}`);
-            console.log(`[WebRTC] Video element dimensions:`, {
-              width: videoElement.offsetWidth,
-              height: videoElement.offsetHeight,
-              clientWidth: videoElement.clientWidth,
-              clientHeight: videoElement.clientHeight,
-            });
-            console.log(`[WebRTC] Video element current srcObject:`, videoElement.srcObject);
+          const alreadyAssignedStreamId = assignedStreams.current.get(username);
+          
+          // Only assign if not already assigned or if it's a different stream
+          if (videoElement && alreadyAssignedStreamId !== remoteStream.id) {
+            console.log(`[WebRTC] 🎥 Assigning received stream to ${username}`);
+            console.log(`[WebRTC] Stream ID:`, remoteStream.id);
             
             videoElement.srcObject = remoteStream;
-            
-            console.log(`[WebRTC] Video element srcObject after assignment:`, videoElement.srcObject);
-            console.log(`[WebRTC] Video element readyState:`, videoElement.readyState);
-            console.log(`[WebRTC] Video element networkState:`, videoElement.networkState);
+            assignedStreams.current.set(username, remoteStream.id);
             
             videoElement.play()
               .then(() => {
-                console.log(`[WebRTC] ✅ Playing ${username} video`);
-                console.log(`[WebRTC] Video paused:`, videoElement.paused);
-                console.log(`[WebRTC] Video ended:`, videoElement.ended);
+                console.log(`[WebRTC] ✅ Playing ${username} video successfully`);
               })
-              .catch(err => console.error(`Failed to play ${username} video:`, err));
+              .catch(err => console.error(`[WebRTC] ❌ Failed to play ${username}:`, err));
+          } else if (alreadyAssignedStreamId === remoteStream.id) {
+            console.log(`[WebRTC] ⏭️ Stream already assigned to ${username}, skipping`);
           } else {
-            console.log(`[WebRTC] ⚠️ Video element not yet mounted for ${username}, will assign when mounted`);
+            console.log(`[WebRTC] ⚠️ Video element not yet mounted for ${username}`);
           }
-        }, 100); // Small delay to ensure video element is mounted
+        }, 150);
       });
 
       peer.on("connect", () => {
@@ -198,6 +193,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
         console.log(`[WebRTC] Cleaning up peer for ${username} (left room)`);
         peer.destroy();
         peersRef.current.delete(username);
+        assignedStreams.current.delete(username); // Clear assignment tracking
         setRemoteStreams((prev) => {
           const newMap = new Map(prev);
           newMap.delete(username);
@@ -243,21 +239,24 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     });
   }, [signals, currentUser, deleteSignal]);
 
-  // Assign remote streams to video elements
+  // Assign remote streams to video elements (only if not already assigned)
   useEffect(() => {
     if (remoteStreams.size > 0) {
-      console.log(`[WebRTC] 📺 Syncing streams to video elements. Streams:`, Array.from(remoteStreams.keys()));
+      console.log(`[WebRTC] 📺 Checking stream sync. Streams:`, Array.from(remoteStreams.keys()));
     }
     remoteStreams.forEach((stream, username) => {
       const videoElement = videoRefs.current.get(username);
-      if (videoElement) {
-        if (videoElement.srcObject !== stream) {
-          console.log(`[WebRTC] 🎥 Setting stream for ${username} in sync effect`);
-          videoElement.srcObject = stream;
-          videoElement.play().catch(err => console.error(`Play failed for ${username}:`, err));
-        }
-      } else {
-        console.log(`[WebRTC] ⚠️ No video element for ${username} (will retry when mounted)`);
+      const alreadyAssignedStreamId = assignedStreams.current.get(username);
+      
+      if (videoElement && alreadyAssignedStreamId !== stream.id) {
+        console.log(`[WebRTC] 📺 Syncing stream to ${username} (not yet assigned)`);
+        videoElement.srcObject = stream;
+        assignedStreams.current.set(username, stream.id);
+        videoElement.play()
+          .then(() => console.log(`[WebRTC] ✅ ${username} playing after sync`))
+          .catch(err => console.error(`[WebRTC] ❌ Play failed for ${username}:`, err));
+      } else if (alreadyAssignedStreamId === stream.id) {
+        console.log(`[WebRTC] ⏭️ Stream already assigned to ${username}`);
       }
     });
   }, [remoteStreams, participants]); // Add participants to re-run when DOM updates
@@ -309,22 +308,30 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                     if (el) {
                       videoRefs.current.set(user.username, el);
                       
-                      // Check if we already have a stream for this user
-                      const stream = remoteStreams.get(user.username);
-                      if (stream && el.srcObject !== stream) {
-                        console.log(`[WebRTC] 🎥 Assigning remote stream to ${user.username} on mount`);
-                        console.log(`[WebRTC] Stream for ${user.username} has tracks:`, stream.getTracks().length);
-                        el.srcObject = stream;
-                        el.play()
-                          .then(() => console.log(`[WebRTC] ✅ ${user.username} video playing`))
-                          .catch(err => console.error(`Failed to play video for ${user.username}:`, err));
-                      } else if (isCurrentUser && localStream && el.srcObject !== localStream) {
-                        console.log(`[WebRTC] 🎥 Assigning LOCAL stream to ${user.username}`);
-                        el.srcObject = localStream;
-                        el.play().catch(err => console.error(`Failed to play local video:`, err));
+                      if (isCurrentUser && localStream) {
+                        // Always assign local stream immediately
+                        if (el.srcObject !== localStream) {
+                          console.log(`[WebRTC] 🎥 Assigning LOCAL stream to ${user.username}`);
+                          el.srcObject = localStream;
+                          el.play().catch(err => console.error(`Failed to play local video:`, err));
+                        }
+                      } else {
+                        // For remote users, check if stream is assigned
+                        const stream = remoteStreams.get(user.username);
+                        const alreadyAssignedStreamId = assignedStreams.current.get(user.username);
+                        
+                        if (stream && alreadyAssignedStreamId !== stream.id) {
+                          console.log(`[WebRTC] 🎥 Assigning remote stream to ${user.username} on mount`);
+                          el.srcObject = stream;
+                          assignedStreams.current.set(user.username, stream.id);
+                          el.play()
+                            .then(() => console.log(`[WebRTC] ✅ ${user.username} video playing`))
+                            .catch(err => console.error(`[WebRTC] ❌ Failed to play ${user.username}:`, err));
+                        }
                       }
                     } else {
                       videoRefs.current.delete(user.username);
+                      assignedStreams.current.delete(user.username);
                     }
                   }}
                   autoPlay

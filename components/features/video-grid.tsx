@@ -135,6 +135,10 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
 
       peer.on("stream", (remoteStream) => {
         console.log(`[WebRTC] ✅ Received stream from ${username}`, remoteStream);
+        console.log(`[WebRTC] Stream tracks:`, remoteStream.getTracks().map(t => `${t.kind}: ${t.enabled}, readyState: ${t.readyState}`));
+        console.log(`[WebRTC] Stream active:`, remoteStream.active);
+        console.log(`[WebRTC] Stream ID:`, remoteStream.id);
+        
         setRemoteStreams((prev) => {
           const newMap = new Map(prev);
           newMap.set(username, remoteStream);
@@ -142,14 +146,35 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
         });
         
         // Immediately assign stream to video element if it exists
-        const videoElement = videoRefs.current.get(username);
-        if (videoElement) {
-          console.log(`[WebRTC] 🎥 Immediately assigning received stream to ${username}`);
-          videoElement.srcObject = remoteStream;
-          videoElement.play().catch(err => console.error(`Failed to play ${username} video:`, err));
-        } else {
-          console.log(`[WebRTC] ⚠️ Video element not yet mounted for ${username}, will assign when mounted`);
-        }
+        setTimeout(() => {
+          const videoElement = videoRefs.current.get(username);
+          if (videoElement) {
+            console.log(`[WebRTC] 🎥 Immediately assigning received stream to ${username}`);
+            console.log(`[WebRTC] Video element dimensions:`, {
+              width: videoElement.offsetWidth,
+              height: videoElement.offsetHeight,
+              clientWidth: videoElement.clientWidth,
+              clientHeight: videoElement.clientHeight,
+            });
+            console.log(`[WebRTC] Video element current srcObject:`, videoElement.srcObject);
+            
+            videoElement.srcObject = remoteStream;
+            
+            console.log(`[WebRTC] Video element srcObject after assignment:`, videoElement.srcObject);
+            console.log(`[WebRTC] Video element readyState:`, videoElement.readyState);
+            console.log(`[WebRTC] Video element networkState:`, videoElement.networkState);
+            
+            videoElement.play()
+              .then(() => {
+                console.log(`[WebRTC] ✅ Playing ${username} video`);
+                console.log(`[WebRTC] Video paused:`, videoElement.paused);
+                console.log(`[WebRTC] Video ended:`, videoElement.ended);
+              })
+              .catch(err => console.error(`Failed to play ${username} video:`, err));
+          } else {
+            console.log(`[WebRTC] ⚠️ Video element not yet mounted for ${username}, will assign when mounted`);
+          }
+        }, 100); // Small delay to ensure video element is mounted
       });
 
       peer.on("connect", () => {
@@ -287,9 +312,12 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                       // Check if we already have a stream for this user
                       const stream = remoteStreams.get(user.username);
                       if (stream && el.srcObject !== stream) {
-                        console.log(`[WebRTC] 🎥 Assigning remote stream to ${user.username}`);
+                        console.log(`[WebRTC] 🎥 Assigning remote stream to ${user.username} on mount`);
+                        console.log(`[WebRTC] Stream for ${user.username} has tracks:`, stream.getTracks().length);
                         el.srcObject = stream;
-                        el.play().catch(err => console.error(`Failed to play video for ${user.username}:`, err));
+                        el.play()
+                          .then(() => console.log(`[WebRTC] ✅ ${user.username} video playing`))
+                          .catch(err => console.error(`Failed to play video for ${user.username}:`, err));
                       } else if (isCurrentUser && localStream && el.srcObject !== localStream) {
                         console.log(`[WebRTC] 🎥 Assigning LOCAL stream to ${user.username}`);
                         el.srcObject = localStream;
@@ -303,6 +331,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                   playsInline
                   muted={isCurrentUser}
                   className="w-full h-full object-contain bg-black"
+                  style={{ minHeight: '200px' }}
                 />
                 
                 {/* User label */}
@@ -310,6 +339,10 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                   <p className="text-white text-sm font-medium">
                     {user.username}
                     {isCurrentUser && " (You)"}
+                  </p>
+                  {/* Debug indicator */}
+                  <p className="text-xs text-gray-400">
+                    {remoteStreams.has(user.username) ? "📡 Stream" : "⏳ Waiting"}
                   </p>
                 </div>
               </div>

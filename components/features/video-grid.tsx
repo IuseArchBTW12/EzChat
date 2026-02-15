@@ -24,6 +24,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const processedSignals = useRef<Set<string>>(new Set());
   const cameraStatusSet = useRef(false);
   const assignedStreams = useRef<Map<string, string>>(new Map()); // Track username -> streamId to prevent duplicate assignments
+  const playingVideos = useRef<Set<string>>(new Set()); // Track which videos are currently playing/being set up
   const sendSignal = useMutation(api.webrtc.sendSignal);
   const deleteSignal = useMutation(api.webrtc.deleteSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
@@ -316,17 +317,33 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                           el.play().catch(err => console.error(`Failed to play local video:`, err));
                         }
                       } else {
-                        // For remote users, check if stream is assigned
+                        // For remote users, check if stream is already assigned to THIS element
                         const stream = remoteStreams.get(user.username);
                         const alreadyAssignedStreamId = assignedStreams.current.get(user.username);
                         
+                        // Only assign if we haven't already assigned this stream (prevent re-assignment on remount)
                         if (stream && alreadyAssignedStreamId !== stream.id) {
                           console.log(`[WebRTC] 🎥 Assigning remote stream to ${user.username} on mount`);
                           el.srcObject = stream;
                           assignedStreams.current.set(user.username, stream.id);
+                          playingVideos.current.add(user.username);
+                          
                           el.play()
-                            .then(() => console.log(`[WebRTC] ✅ ${user.username} video playing`))
-                            .catch(err => console.error(`[WebRTC] ❌ Failed to play ${user.username}:`, err));
+                            .then(() => {
+                              console.log(`[WebRTC] ✅ ${user.username} video playing`);
+                              playingVideos.current.delete(user.username);
+                            })
+                            .catch(err => {
+                              console.error(`[WebRTC] ❌ Failed to play ${user.username}:`, err);
+                              playingVideos.current.delete(user.username);
+                            });
+                        } else if (stream && alreadyAssignedStreamId === stream.id) {
+                          // Already assigned, but element is new (remount) - just set srcObject
+                          if (el.srcObject !== stream) {
+                            console.log(`[WebRTC] 🔄 Re-setting stream on remounted ${user.username} element`);
+                            el.srcObject = stream;
+                            el.play().catch(() => {}); // Silently try to play
+                          }
                         }
                       }
                     } else {

@@ -33,9 +33,8 @@ export function LandingPage() {
               <a href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                 Features
               </a>
-              <a href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                How It Works
-              </a>
+              <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">How It Works</Link>
+              <Link href="/guidelines" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">Guidelines</Link>
               <Link href="/about" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">About</Link>
             </div>
 
@@ -74,13 +73,9 @@ export function LandingPage() {
                 >
                   Features
                 </a>
-                <a
-                  href="#how-it-works"
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  How It Works
-                </a>
+                <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>How It Works</Link>
+                <Link href="/guidelines" className="text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>Guidelines</Link>
+                <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMobileMenuOpen(false)}>About</Link>
               </div>
             </div>
           )}

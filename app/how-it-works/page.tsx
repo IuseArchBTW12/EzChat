@@ -1,0 +1,8 @@
+import Link from "next/link";
+import { Brand } from "@/components/brand";
+
+const steps = [["01", "Claim a name", "Choose an all-caps name. It becomes the address of your room."], ["02", "Open your room", "Share the link, welcome people in, and decide how your community joins."], ["03", "Set the tone", "Use roles, moderation, and chat controls to make your room feel like yours."]] as const;
+
+export const metadata = { title: "How Foyer works" };
+
+export default function HowItWorksPage() { return <main className="min-h-screen bg-background"><header className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"><Brand /><Link href="/" className="text-sm font-semibold text-muted-foreground hover:text-foreground">Back home</Link></header><section className="border-y border-border bg-secondary"><div className="mx-auto max-w-5xl px-4 py-24 sm:px-6"><p className="text-xs font-semibold uppercase tracking-[.22em] text-primary">How it works</p><h1 className="font-display mt-5 max-w-3xl text-5xl font-semibold leading-[.92] tracking-[-.065em] sm:text-7xl">Make room for people.</h1><p className="mt-8 max-w-2xl text-lg leading-8 text-muted-foreground">Foyer keeps setup out of the way so a room can become a conversation quickly.</p></div></section><ol className="mx-auto max-w-5xl divide-y divide-border px-4 py-16 sm:px-6">{steps.map(([number, title, copy]) => <li key={number} className="grid gap-4 py-8 sm:grid-cols-[5rem_1fr_1fr]"><span className="font-display text-xl text-primary">{number}</span><h2 className="font-display text-3xl font-semibold tracking-[-.04em]">{title}</h2><p className="leading-7 text-muted-foreground">{copy}</p></li>)}</ol></main>; }

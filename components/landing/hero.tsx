@@ -14,7 +14,9 @@ export function Hero() {
     let frame = 0;
     const update = () => {
       frame = 0;
-      sceneRef.current?.style.setProperty("--hero-scroll", String(Math.min(window.scrollY / window.innerHeight, 1)));
+      const progress = Math.min(window.scrollY / window.innerHeight, 1);
+      sceneRef.current?.style.setProperty("--hero-far", `${-72 * progress}px`);
+      sceneRef.current?.style.setProperty("--hero-near", `${-28 * progress}px`);
     };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
     update();

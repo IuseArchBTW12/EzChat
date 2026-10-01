@@ -14,8 +14,8 @@
 @layer utilities {
   .font-display { font-family: Georgia, "Times New Roman", serif; }
   .signal-field { background-image: linear-gradient(hsl(var(--border) / .45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / .45) 1px, transparent 1px), radial-gradient(circle at 78% 34%, hsl(var(--primary) / .26), transparent 25rem); background-size: 3rem 3rem, 3rem 3rem, auto; mask-image: linear-gradient(to bottom, black, transparent 82%); }
-  .hero-scene { --hero-scroll: 0; }
-  @media (prefers-reduced-motion: no-preference) { .hero-scene > :first-child { transform: translateY(calc(var(--hero-scroll) * -3rem)); } .hero-room-card { transform: translateY(calc(var(--hero-scroll) * -1rem)); } }
+  .hero-scene { --hero-far: 0px; --hero-near: 0px; }
+  @media (prefers-reduced-motion: no-preference) { .hero-scene > :first-child { transform: translateY(var(--hero-far)); } .hero-room-card { transform: translateY(var(--hero-near)); } }
   @media (prefers-reduced-motion: no-preference) { .signal-field { animation: signal-shift 18s linear infinite; } }
   @keyframes signal-shift { to { background-position: 3rem 3rem, 3rem 3rem, center; } }
 }

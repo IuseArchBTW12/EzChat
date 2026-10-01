@@ -5,6 +5,7 @@ import { getMaxCams } from "@/lib/utils";
 import Peer from "simple-peer";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Mic, MicOff, MonitorUp, Video, VideoOff } from "lucide-react";
 
 interface VideoGridProps {
   participants: any[];
@@ -19,6 +20,9 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     new Map()
   );
   const [playingUsers, setPlayingUsers] = useState<Set<string>>(new Set());
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOn, setIsCameraOn] = useState(true);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
   
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const peersRef = useRef<Map<string, Peer.Instance>>(new Map());
@@ -46,7 +50,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
             height: { ideal: 360 },
             frameRate: { max: 30 },
           },
-          audio: false, // No mics per requirements
+          audio: true,
         });
         
         if (mounted) {
@@ -101,7 +105,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
              p.user._id !== currentUser._id && 
              p.user.username && 
              p.user.username.trim() !== '' && 
-             p.hasCameraOn === true
+             p.isOnline === true
     );
 
     console.log(`[WebRTC] Current user: ${currentUser.username}, Other participants with camera:`, otherParticipants.map(p => p.user.username));
@@ -242,6 +246,45 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     });
   }, [signals, peers, currentUser, deleteSignal]);
 
+  const toggleMute = () => {
+    const nextMuted = !isMuted;
+    localStream?.getAudioTracks().forEach((track) => { track.enabled = !nextMuted; });
+    setIsMuted(nextMuted);
+  };
+
+  const toggleVideo = () => {
+    const nextCameraOn = !isCameraOn;
+    localStream?.getVideoTracks().forEach((track) => { track.enabled = nextCameraOn; });
+    toggleCamera({ roomName: roomname, hasCameraOn: nextCameraOn }).catch(console.error);
+    setIsCameraOn(nextCameraOn);
+  };
+
+  const stopSharing = (stream: MediaStream) => {
+    const screenTrack = stream.getVideoTracks()[0];
+    const cameraTrack = localStream?.getVideoTracks()[0];
+    if (screenTrack && cameraTrack && localStream) {
+      peersRef.current.forEach((peer) => peer.replaceTrack(screenTrack, cameraTrack, localStream));
+    }
+    if (screenTrack) screenTrack.onended = null;
+    stream.getTracks().forEach((track) => track.stop());
+    setScreenStream(null);
+  };
+
+  const shareScreen = async () => {
+    if (!localStream) return;
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      const screenTrack = stream.getVideoTracks()[0];
+      const cameraTrack = localStream.getVideoTracks()[0];
+      if (!screenTrack || !cameraTrack) return;
+      peersRef.current.forEach((peer) => peer.replaceTrack(cameraTrack, screenTrack, localStream));
+      screenTrack.onended = () => stopSharing(stream);
+      setScreenStream(stream);
+    } catch (error) {
+      if ((error as DOMException).name !== "NotAllowedError") console.error("Failed to share screen:", error);
+    }
+  };
+
   // Calculate grid layout - filter out invalid participants
   const visibleParticipants = participants
     .filter((p) => p.user && p.user.username && p.user.username.trim() !== '')
@@ -290,10 +333,11 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                       videoRefs.current.set(user.username, el);
                       
                       if (isCurrentUser && localStream) {
+                        const previewStream = screenStream ?? localStream;
                         // Always assign local stream immediately
-                        if (el.srcObject !== localStream) {
+                        if (el.srcObject !== previewStream) {
                           console.log(`[WebRTC] 🎥 Assigning LOCAL stream to ${user.username}`);
-                          el.srcObject = localStream;
+                          el.srcObject = previewStream;
                           el.play().catch(err => console.error(`Failed to play local video:`, err));
                         }
                       } else {
@@ -342,6 +386,19 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       {participants.length > maxVideos && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-medium">
           {participants.length - maxVideos} more users (upgrade for larger grid)
+        </div>
+      )}
+      {localStream && (
+        <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2 rounded-full bg-gray-800 p-2 shadow-lg">
+          <button type="button" aria-label={isMuted ? "Unmute microphone" : "Mute microphone"} onClick={toggleMute} className="rounded-full p-3 text-white hover:bg-gray-700">
+            {isMuted ? <MicOff /> : <Mic />}
+          </button>
+          <button type="button" aria-label={isCameraOn ? "Turn camera off" : "Turn camera on"} onClick={toggleVideo} className="rounded-full p-3 text-white hover:bg-gray-700">
+            {isCameraOn ? <Video /> : <VideoOff />}
+          </button>
+          <button type="button" aria-label={screenStream ? "Stop screen sharing" : "Share screen"} onClick={() => screenStream ? stopSharing(screenStream) : shareScreen()} className="rounded-full p-3 text-white hover:bg-gray-700">
+            <MonitorUp />
+          </button>
         </div>
       )}
     </div>

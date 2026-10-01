@@ -155,6 +155,14 @@ export const assignRegular = mutation({
       throw new Error("User is not in the chatroom");
     }
 
+    if (targetParticipant.role === "owner") {
+      throw new Error("The room owner role cannot be changed");
+    }
+
+    if (participant.role === "moderator" && targetParticipant.role === "moderator") {
+      throw new Error("Moderators cannot change another moderator's role");
+    }
+
     await ctx.db.patch(targetParticipant._id, {
       role: "regular",
     });
@@ -302,6 +310,17 @@ export const banUser = mutation({
     }
 
     // Add to ban list
+    const existingBan = await ctx.db
+      .query("bans")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", chatroom._id).eq("userId", targetUser._id)
+      )
+      .first();
+
+    if (existingBan) {
+      throw new Error("User is already banned from this room");
+    }
+
     await ctx.db.insert("bans", {
       roomId: chatroom._id,
       userId: targetUser._id,
@@ -363,6 +382,9 @@ export const unbanUser = mutation({
       .first();
 
     if (ban && !ban.isSitewideBan) {
+      if (participant.role === "moderator" && ban.bannedById !== user._id) {
+        throw new Error("Moderators can only reverse their own bans");
+      }
       await ctx.db.delete(ban._id);
     }
   },
@@ -427,12 +449,27 @@ export const sitewideBan = mutation({
 export const getBanList = query({
   args: { roomName: v.string() },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
     const chatroom = await ctx.db
       .query("chatrooms")
       .withIndex("by_name", (q) => q.eq("name", args.roomName))
       .first();
 
-    if (!chatroom) return [];
+    if (!user || !chatroom) return [];
+
+    const participant = await ctx.db
+      .query("roomParticipants")
+      .withIndex("by_room_and_user", (q) => q.eq("roomId", chatroom._id).eq("userId", user._id))
+      .first();
+    if (!participant || !["owner", "moderator"].includes(participant.role)) {
+      throw new Error("Only room owners and moderators can view bans");
+    }
 
     const bans = await ctx.db
       .query("bans")
@@ -452,5 +489,21 @@ export const getBanList = query({
     );
 
     return bansWithUsers;
+  },
+});
+
+export const setChatLock = mutation({
+  args: { roomName: v.string(), locked: v.boolean() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject)).first();
+    const chatroom = await ctx.db.query("chatrooms").withIndex("by_name", (q) => q.eq("name", args.roomName)).first();
+    if (!user || !chatroom) throw new Error("Room not found");
+    const participant = await ctx.db.query("roomParticipants").withIndex("by_room_and_user", (q) => q.eq("roomId", chatroom._id).eq("userId", user._id)).first();
+    if (!participant || !["owner", "moderator"].includes(participant.role)) {
+      throw new Error("Only room owners and moderators can lock chat");
+    }
+    await ctx.db.patch(chatroom._id, { isChatLocked: args.locked });
   },
 });

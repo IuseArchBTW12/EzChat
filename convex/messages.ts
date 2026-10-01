@@ -41,6 +41,14 @@ export const sendMessage = mutation({
       throw new Error("You must join the chatroom first");
     }
 
+    if (!participant.isOnline) {
+      throw new Error("You are no longer in this room");
+    }
+
+    if (chatroom.isChatLocked && !["owner", "moderator"].includes(participant.role)) {
+      throw new Error("Chat is temporarily locked by room moderation");
+    }
+
     // Guests cannot send messages
     if (participant.role === "guest") {
       throw new Error("Guests cannot send messages. You need regular status.");

@@ -43,6 +43,9 @@ export function UserList({ participants, currentUser, roomname }: UserListProps)
     action: "mod" | "regular" | "kick" | "ban",
     username: string
   ) => {
+    if ((action === "kick" || action === "ban") && !window.confirm(`${action === "ban" ? "Ban" : "Remove"} ${username} from this room?`)) {
+      return;
+    }
     setActionLoading(true);
     try {
       switch (action) {

@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Send, Trash2 } from "lucide-react";
+import { LockKeyhole, Send, Trash2, UnlockKeyhole } from "lucide-react";
 import { formatDate, getUserRoleTag } from "@/lib/utils";
 import { MessageWithUser } from "@/lib/types";
 
@@ -22,6 +22,8 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
   const deleteMessage = useMutation(api.messages.deleteMessage);
   const addBlockedWord = useMutation(api.moderation.addBlockedWord);
   const removeBlockedWord = useMutation(api.moderation.removeBlockedWord);
+  const setChatLock = useMutation(api.moderation.setChatLock);
+  const unbanUser = useMutation(api.moderation.unbanUser);
 
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -31,6 +33,10 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
   const isGuest = currentParticipant?.role === "guest";
   const isOwner = currentParticipant?.role === "owner";
   const canModerate = ["owner", "moderator"].includes(currentParticipant?.role);
+  const chatroom = useQuery(api.chatrooms.getChatroomByName, { name: roomname });
+  const bans = useQuery(api.moderation.getBanList, canModerate ? { roomName: roomname } : "skip");
+  const isChatLocked = Boolean(chatroom?.isChatLocked);
+  const canChat = !isGuest && !(isChatLocked && !canModerate);
   const blockedWords = useQuery(
     api.moderation.getBlockedWords,
     isOwner ? { roomName: roomname } : "skip"
@@ -118,6 +124,20 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
         </div>
       </ScrollArea>
 
+      {canModerate && (
+        <details className="border-t border-white/10 p-5 text-sm text-[#f6f2ea]/70">
+          <summary className="cursor-pointer font-medium text-[#f6f2ea]">Room moderation</summary>
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#27211c] p-3">
+            <div><p className="font-medium text-[#f6f2ea]">Chat is {isChatLocked ? "locked" : "open"}</p><p className="mt-1 text-xs text-[#f6f2ea]/45">Locking keeps guest and regular chat paused.</p></div>
+            <Button size="sm" variant={isChatLocked ? "secondary" : "default"} onClick={() => setChatLock({ roomName: roomname, locked: !isChatLocked }).catch((error) => alert(error.message))}>
+              {isChatLocked ? <UnlockKeyhole className="mr-2 h-3.5 w-3.5" /> : <LockKeyhole className="mr-2 h-3.5 w-3.5" />}
+              {isChatLocked ? "Open" : "Lock"}
+            </Button>
+          </div>
+          {bans && bans.length > 0 && <div className="mt-4"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#f6f2ea]/45">Banned from this room</p><div className="mt-2 space-y-2">{bans.map((ban) => <div key={ban._id} className="flex items-center justify-between gap-3"><span className="truncate">{ban.user?.username || "Unknown"}</span><Button variant="ghost" size="sm" onClick={() => unbanUser({ roomName: roomname, targetUsername: ban.user?.username || "" }).catch((error) => alert(error.message))}>Unban</Button></div>)}</div></div>}
+        </details>
+      )}
+
       {isOwner && (
         <details className="border-t border-white/10 p-5 text-sm text-[#f6f2ea]/70">
           <summary className="cursor-pointer font-medium">Blocked words</summary>
@@ -143,19 +163,21 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
             placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            disabled={isSending || isGuest}
+            disabled={isSending || !canChat}
             className="border-white/10 bg-[#27211c] text-[#f6f2ea] placeholder:text-[#f6f2ea]/35"
           />
           <Button
             type="submit"
             size="icon"
-            disabled={isSending || isGuest || !newMessage.trim()}
+            disabled={isSending || !canChat || !newMessage.trim()}
           >
             <Send className="h-4 w-4" />
           </Button>
         </form>
         <p className="mt-2 text-xs text-[#f6f2ea]/40">
-          {isGuest
+          {isChatLocked && !canModerate
+            ? "Chat is locked by room moderation."
+            : isGuest
             ? "Guests can only view chat. Ask for regular status to chat."
             : "Press Enter to send"}
         </p>

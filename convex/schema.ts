@@ -30,6 +30,7 @@ export default defineSchema({
     name: v.string(), // ALL CAPS (matches username)
     ownerId: v.id("users"),
     blockedWords: v.optional(v.array(v.string())),
+    isChatLocked: v.optional(v.boolean()),
     isActive: v.boolean(),
     createdAt: v.number(),
   }).index("by_name", ["name"]),

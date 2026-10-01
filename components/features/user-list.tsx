@@ -70,9 +70,10 @@ export function UserList({ participants, currentUser, roomname }: UserListProps)
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="font-semibold text-white">
-          Users ({participants.length})
+      <div className="border-b border-white/10 p-5">
+        <p className="text-[10px] font-bold uppercase tracking-[.22em] text-primary">In this room</p>
+        <h2 className="mt-1 font-display text-xl font-semibold text-[#f6f2ea]">
+          {participants.length} {participants.length === 1 ? "person" : "people"} here
         </h2>
       </div>
       
@@ -93,7 +94,7 @@ export function UserList({ participants, currentUser, roomname }: UserListProps)
               >
                 <div
                   className={`flex items-center justify-between p-2 rounded hover:bg-gray-700 transition-colors ${
-                    isSelected ? "bg-gray-700" : ""
+                    isSelected ? "bg-white/10" : "hover:bg-white/5"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -103,10 +104,10 @@ export function UserList({ participants, currentUser, roomname }: UserListProps)
                           {tierLabel}
                         </span>
                       )}
-                      <span className="text-sm font-medium text-white truncate">
+                      <span className="text-sm font-medium text-[#f6f2ea] truncate">
                         {participant.displayName || user.username}
                         {roleTag && (
-                          <span className="ml-1 text-gray-400">({roleTag})</span>
+                          <span className="ml-1 text-[#f6f2ea]/45">({roleTag})</span>
                         )}
                       </span>
                     </div>
@@ -128,7 +129,7 @@ export function UserList({ participants, currentUser, roomname }: UserListProps)
 
                 {/* Action Menu */}
                 {isSelected && canModerate && (
-                  <div className="absolute right-2 top-full mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg p-1 z-10 min-w-40">
+                  <div className="absolute right-2 top-full z-10 mt-1 min-w-40 rounded-md border border-white/10 bg-[#27211c] p-1 shadow-lg">
                     {currentParticipant?.role === "owner" && (
                       <Button
                         variant="ghost"

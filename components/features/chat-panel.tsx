@@ -73,12 +73,13 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="font-semibold text-white">Chat</h2>
+      <div className="border-b border-white/10 p-5">
+        <p className="text-[10px] font-bold uppercase tracking-[.22em] text-primary">Room chat</p>
+        <h2 className="mt-1 font-display text-2xl font-semibold text-[#f6f2ea]">Keep the thread moving</h2>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-5" ref={scrollRef}>
         <div className="space-y-3">
           {messages?.map((message: MessageWithUser) => {
             const user = message.user;
@@ -89,17 +90,17 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
             return (
               <div key={message._id} className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-semibold text-white">
+                  <span className="text-sm font-semibold text-[#f6f2ea]">
                     {user.username}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-[#f6f2ea]/40">
                     {formatDate(message.sentAt)}
                   </span>
                   {canDelete && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 text-gray-500 hover:text-destructive"
+                      className="h-5 w-5 text-[#f6f2ea]/35 hover:text-destructive"
                       onClick={() => {
                         if (window.confirm("Delete this message?")) {
                           deleteMessage({ messageId: message._id }).catch((error) => alert(error.message));
@@ -110,7 +111,7 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
                     </Button>
                   )}
                 </div>
-                <p className="text-sm text-gray-300">{message.content}</p>
+                <p className="text-sm leading-6 text-[#f6f2ea]/75">{message.content}</p>
               </div>
             );
           })}
@@ -118,7 +119,7 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
       </ScrollArea>
 
       {isOwner && (
-        <details className="border-t border-gray-700 p-4 text-sm text-gray-300">
+        <details className="border-t border-white/10 p-5 text-sm text-[#f6f2ea]/70">
           <summary className="cursor-pointer font-medium">Blocked words</summary>
           <form onSubmit={handleAddBlockedWord} className="mt-3 flex gap-2">
             <Input value={blockedWord} onChange={(e) => setBlockedWord(e.target.value)} placeholder="Add word" />
@@ -135,7 +136,7 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
       )}
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="border-t border-white/10 p-5">
         <form onSubmit={handleSendMessage} className="flex gap-2">
           <Input
             type="text"
@@ -143,7 +144,7 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             disabled={isSending || isGuest}
-            className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+            className="border-white/10 bg-[#27211c] text-[#f6f2ea] placeholder:text-[#f6f2ea]/35"
           />
           <Button
             type="submit"
@@ -153,7 +154,7 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
             <Send className="h-4 w-4" />
           </Button>
         </form>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="mt-2 text-xs text-[#f6f2ea]/40">
           {isGuest
             ? "Guests can only view chat. Ask for regular status to chat."
             : "Press Enter to send"}

@@ -128,24 +128,24 @@ export function Chatroom({ roomname }: ChatroomProps) {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background">
+    <div className="h-[100dvh] flex flex-col bg-[#0c0a09] text-[#f6f2ea]">
       {/* Header */}
-      <header className="border-b border-border bg-card px-4 py-3">
+      <header className="border-b border-white/10 bg-[#151210] px-4 py-3 sm:px-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push("/")}
-              className="rounded-full text-muted-foreground hover:text-foreground"
+              className="rounded-full text-[#f6f2ea]/60 hover:bg-white/10 hover:text-[#f6f2ea]"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Live room</p><h1 className="font-display text-xl font-semibold tracking-[-0.035em]">{roomname}</h1></div>
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Live now</p><h1 className="font-display text-2xl font-semibold tracking-[-0.035em]">{roomname}</h1></div>
           </div>
-          <p className="hidden text-sm text-muted-foreground sm:block">
-            Owner: {chatroom.ownerUsername}
+          <p className="hidden rounded-full border border-white/10 px-3 py-1 text-xs text-[#f6f2ea]/60 sm:block">
+            Hosted by {chatroom.ownerUsername}
           </p>
         </div>
       </header>
@@ -153,7 +153,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         {/* User List - Left */}
-        <aside className="hidden w-60 border-r border-border bg-card xl:block">
+        <aside className="hidden w-64 border-r border-white/10 bg-[#151210] xl:block">
           <UserList
             participants={participants || []}
             currentUser={currentUser}
@@ -162,7 +162,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
         </aside>
 
         {/* Video Grid - Center */}
-        <main className="min-h-0 flex-1 bg-background lg:min-w-0">
+        <main className="min-h-0 flex-1 bg-[#0c0a09] lg:min-w-0">
           <VideoGrid
             participants={participants || []}
             currentUser={currentUser}
@@ -171,7 +171,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
         </main>
 
         {/* Chat Panel - Right */}
-        <aside className="h-[38dvh] w-full border-t border-border bg-card lg:h-auto lg:w-80 lg:border-l lg:border-t-0">
+        <aside className="h-[38dvh] w-full border-t border-white/10 bg-[#151210] lg:h-auto lg:w-96 lg:border-l lg:border-t-0">
           <ChatPanel
             roomname={roomname}
             currentUser={currentUser}

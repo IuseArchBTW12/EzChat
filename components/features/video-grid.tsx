@@ -343,12 +343,12 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const gridRows = Math.ceil(visibleParticipants.length / gridCols);
 
   return (
-    <div className="h-full p-4">
+    <div className="relative h-full bg-[#0c0a09] p-3 sm:p-6">
       {!localStream && (
         <div className="h-full flex items-center justify-center">
           <div className="text-center">
-            <p className="text-white text-lg mb-2">Requesting camera access...</p>
-            <p className="text-gray-400 text-sm">
+            <p className="font-display text-2xl text-[#f6f2ea] mb-2">Setting up your camera</p>
+            <p className="text-[#f6f2ea]/55 text-sm">
               Please allow camera access to continue
             </p>
           </div>
@@ -357,10 +357,10 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
 
       {localStream && (
         <div
-          className="grid gap-4 w-full h-full content-start p-4"
+          className="grid h-full w-full gap-3"
           style={{
             gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
-            gridAutoRows: 'min-content',
+            gridAutoRows: '1fr',
           }}
         >
           {visibleParticipants.map((participant) => {
@@ -372,7 +372,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
             return (
               <div
                 key={participant._id}
-                className={`relative overflow-hidden rounded-lg bg-gray-800 ${(isCurrentUser ? isSpeaking : participant.isSpeaking) ? "ring-2 ring-green-400" : ""}`}
+                className={`relative overflow-hidden rounded-[1.5rem] bg-[#181411] ring-1 ring-white/10 ${(isCurrentUser ? isSpeaking : participant.isSpeaking) ? "ring-2 ring-primary" : ""}`}
                 style={{
                   aspectRatio: '16 / 9',
                 }}
@@ -410,19 +410,19 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                     next.delete(user.username);
                     return next;
                   })}
-                  className="w-full h-full object-contain bg-black"
+                  className="h-full w-full bg-black object-contain"
                   style={{ minHeight: '200px' }}
                 />
                 
                 {/* User label */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                  <p className="text-white text-sm font-medium">
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-10">
+                  <p className="text-sm font-medium text-white">
                     {user.username}
                     {isCurrentUser && " (You)"}
                     {(isCurrentUser ? isMuted : participant.isMuted) && <MicOff className="ml-2 inline h-4 w-4 text-red-400" />}
                   </p>
                   {/* Debug indicator */}
-                  <p className="text-xs text-gray-400">
+                  <p className="text-[11px] uppercase tracking-[.16em] text-white/55">
                     {isCurrentUser
                       ? localStream ? "📹 You" : "⏳ Waiting"
                       : playingUsers.has(user.username) ? "📡 Stream" : "⏳ Waiting"}
@@ -435,25 +435,25 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       )}
 
       {participants.length > maxVideos && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-medium">
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
           {participants.length - maxVideos} more users (upgrade for larger grid)
         </div>
       )}
       {localStream && (
-        <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2 rounded-full bg-gray-800 p-2 shadow-lg">
-          <button type="button" aria-label={isMuted ? "Unmute microphone" : "Mute microphone"} onClick={toggleMute} className="rounded-full p-3 text-white hover:bg-gray-700">
+        <div className="absolute bottom-6 left-1/2 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 gap-2 rounded-2xl border border-white/10 bg-[#1a1613]/95 p-2 shadow-2xl backdrop-blur">
+          <button type="button" aria-label={isMuted ? "Unmute microphone" : "Mute microphone"} onClick={toggleMute} className={`rounded-xl p-3 text-white transition-colors hover:bg-white/10 ${isMuted ? "bg-destructive" : ""}`}>
             {isMuted ? <MicOff /> : <Mic />}
           </button>
-          <button type="button" aria-label={isCameraOn ? "Turn camera off" : "Turn camera on"} onClick={toggleVideo} className="rounded-full p-3 text-white hover:bg-gray-700">
+          <button type="button" aria-label={isCameraOn ? "Turn camera off" : "Turn camera on"} onClick={toggleVideo} className={`rounded-xl p-3 text-white transition-colors hover:bg-white/10 ${!isCameraOn ? "bg-destructive" : ""}`}>
             {isCameraOn ? <Video /> : <VideoOff />}
           </button>
-          <button type="button" aria-label={screenStream ? "Stop screen sharing" : "Share screen"} onClick={() => screenStream ? stopSharing(screenStream) : shareScreen()} className="rounded-full p-3 text-white hover:bg-gray-700">
+          <button type="button" aria-label={screenStream ? "Stop screen sharing" : "Share screen"} onClick={() => screenStream ? stopSharing(screenStream) : shareScreen()} className={`rounded-xl p-3 text-white transition-colors hover:bg-white/10 ${screenStream ? "bg-primary text-primary-foreground" : ""}`}>
             <MonitorUp />
           </button>
-          <select aria-label="Microphone" className="max-w-32 rounded bg-gray-700 px-2 text-xs text-white" onChange={(event) => changeInput("audio", event.target.value)}>
+          <select aria-label="Microphone" className="hidden max-w-32 rounded-lg border border-white/10 bg-[#27211c] px-2 text-xs text-white lg:block" onChange={(event) => changeInput("audio", event.target.value)}>
             {audioInputs.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}
           </select>
-          <select aria-label="Camera" className="max-w-32 rounded bg-gray-700 px-2 text-xs text-white" onChange={(event) => changeInput("video", event.target.value)}>
+          <select aria-label="Camera" className="hidden max-w-32 rounded-lg border border-white/10 bg-[#27211c] px-2 text-xs text-white lg:block" onChange={(event) => changeInput("video", event.target.value)}>
             {videoInputs.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}
           </select>
         </div>

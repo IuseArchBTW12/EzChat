@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Users, Video, Star, Radio } from "lucide-react";
+import { ArrowUpRight, DoorOpen, Users, Video, Star, Radio } from "lucide-react";
 import { ChatroomWithDetails } from "@/lib/types";
 import { UsernameModal } from "./username-modal";
 
@@ -96,10 +96,18 @@ export function ChatroomDirectory() {
   const favoriteRoomNames = new Set(favoriteRooms?.map((r: ChatroomWithDetails) => r.name) || []);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 py-4 sm:py-10">
+    <div className="mx-auto max-w-6xl space-y-6 py-4 sm:py-10">
+      <section className="relative overflow-hidden rounded-[2rem] border border-border bg-card px-6 py-10 sm:px-10">
+        <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+        <div className="relative max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[.24em] text-primary">Your Foyer</p>
+          <h1 className="font-display mt-3 text-4xl font-semibold tracking-[-.05em] sm:text-6xl">A room starts with a name.</h1>
+          <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">Claim your room, open the door, then let the conversation find its way in.</p>
+        </div>
+      </section>
       {/* Loading State */}
       {currentUser === undefined && (
-        <Card className="rounded-[1.5rem] border-border shadow-none">
+        <Card className="rounded-[1.5rem] border-border bg-card shadow-none">
           <CardContent className="py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -111,7 +119,7 @@ export function ChatroomDirectory() {
 
       {/* User Not Found - shouldn't happen but handle it */}
       {currentUser === null && (
-        <Card className="rounded-[1.5rem] border-border shadow-none">
+        <Card className="rounded-[1.5rem] border-border bg-card shadow-none">
           <CardContent className="py-12">
             <div className="text-center">
               <p className="text-muted-foreground mb-4">Setting up your account...</p>
@@ -123,10 +131,10 @@ export function ChatroomDirectory() {
 
       {/* Create Chatroom Section - show if user has no username */}
       {currentUser && currentUser.username === "" && (
-        <Card className="rounded-[1.5rem] border-border shadow-none">
+        <Card className="overflow-hidden rounded-[2rem] border-border bg-card shadow-none">
           <CardHeader>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Your home base</p>
-            <CardTitle className="font-display text-3xl tracking-[-0.04em]">Claim your room name</CardTitle>
+            <CardTitle className="font-display text-4xl tracking-[-0.05em]">Claim your room name</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleClaimUsername} className="space-y-4">
@@ -140,14 +148,15 @@ export function ChatroomDirectory() {
                   disabled={isCreating}
                 />
                 <p className="text-sm text-muted-foreground mt-2">
-                  Your username becomes your chatroom: ezchat.cam/{newUsername || "YOURNAME"}
+                  Your all-caps name becomes a room anyone can enter: foyer.chat/{newUsername || "YOURNAME"}
                 </p>
               </div>
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
               <Button type="submit" className="w-full rounded-full" disabled={isCreating}>
-                {isCreating ? "Creating..." : "Create My Chatroom"}
+                <DoorOpen className="mr-2 h-4 w-4" />
+                {isCreating ? "Opening your room..." : "Open my room"}
               </Button>
             </form>
           </CardContent>
@@ -156,16 +165,19 @@ export function ChatroomDirectory() {
 
       {/* My Chatroom */}
       {currentUser?.username && (
-        <Card className="border-primary bg-primary text-primary-foreground shadow-none">
-          <CardHeader>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em]">Your room</p>
-            <CardTitle className="font-display text-3xl tracking-[-0.04em]">{currentUser.username}</CardTitle>
+        <Card className="overflow-hidden rounded-[2rem] border-[#c7ff34]/35 bg-[#17140f] text-[#f6f2ea] shadow-none">
+          <CardHeader className="relative">
+            <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-primary/25 blur-3xl" />
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Your room is ready</p>
+            <CardTitle className="font-display text-4xl tracking-[-0.05em]">{currentUser.username}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
+            <p className="mb-5 max-w-md text-sm text-[#f6f2ea]/60">Open the door. Your camera, chat, and moderation controls are waiting inside.</p>
             <Link href={`/${currentUser.username}`}>
-              <Button variant="secondary" className="w-full rounded-full" size="lg">
+              <Button className="w-full rounded-full" size="lg">
                 <Video className="mr-2 h-5 w-5" />
                 Enter {currentUser.username}
+                <ArrowUpRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </CardContent>
@@ -173,7 +185,7 @@ export function ChatroomDirectory() {
       )}
 
       {/* Chatroom Directory */}
-      <Card className="overflow-hidden rounded-[1.5rem] border-border shadow-none">
+      <Card className="overflow-hidden rounded-[2rem] border-border bg-card shadow-none">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><Radio className="h-3.5 w-3.5" /> Live directory</p><CardTitle className="font-display mt-2 text-3xl tracking-[-0.04em]">Find a room</CardTitle></div>
@@ -223,8 +235,8 @@ export function ChatroomDirectory() {
                 <div className="flex items-center justify-between border-t border-border px-1 py-5 transition-colors hover:bg-secondary sm:px-4">
                   <div className="flex-1">
                     <h3 className="font-display text-2xl font-semibold tracking-[-0.035em]">{room.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Hosted by {room.ownerUsername}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                      Hosted by {room.ownerUsername} · live conversation
                     </p>
                   </div>
                   <div className="flex items-center gap-3">

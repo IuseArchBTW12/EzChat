@@ -7,11 +7,13 @@ import { Features } from "@/components/landing/features";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { CTA } from "@/components/landing/cta";
 import { Footer } from "@/components/landing/footer";
+import { RoomScene } from "@/components/landing/room-scene";
 import { ChatroomDirectory } from "@/components/features/chatroom-directory";
 import { Video, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserSync } from "@/components/user-sync";
+import Link from "next/link";
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,6 +42,7 @@ export function LandingPage() {
               <a href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                 How It Works
               </a>
+              <Link href="/about" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">About</Link>
             </div>
 
             {/* Auth Buttons */}
@@ -99,6 +102,7 @@ export function LandingPage() {
         <div id="features">
           <Features />
         </div>
+        <RoomScene />
         <HowItWorks />
         <CTA />
         <Footer />

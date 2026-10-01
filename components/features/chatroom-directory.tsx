@@ -94,7 +94,7 @@ export function ChatroomDirectory() {
   };
 
   const displayedRooms = activeTab === "favorites" ? favoriteRooms : chatrooms;
-  const favoriteRoomNames = new Set(favoriteRooms?.map((r: ChatroomWithDetails) => r.name) || []);
+  const favoriteRoomNames = new Set(favoriteRooms?.map((room) => room.name) || []);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 py-4 sm:py-10">

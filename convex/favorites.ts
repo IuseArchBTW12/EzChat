@@ -112,10 +112,15 @@ export const getFavoriteRooms = query({
           .withIndex("by_room", (q) => q.eq("roomId", room._id))
           .filter((q) => q.eq(q.field("isOnline"), true))
           .collect();
+        const members = await ctx.db
+          .query("roomMembers")
+          .withIndex("by_room", (q) => q.eq("roomId", room._id))
+          .collect();
 
         return {
           ...room,
           participantCount: participants.length,
+          memberCount: members.length,
           ownerUsername: owner?.username || "Unknown",
           favoritedAt: fav.favoritedAt,
         };

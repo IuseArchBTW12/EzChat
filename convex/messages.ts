@@ -25,6 +25,10 @@ export const sendMessage = mutation({
 
     if (!chatroom) throw new Error("Chatroom not found");
 
+    if (chatroom.blockedWords?.some((word) => args.content.toLowerCase().includes(word))) {
+      throw new Error("This message contains a blocked word");
+    }
+
     // Check participant role (only regulars, mods, and owners can send messages)
     const participant = await ctx.db
       .query("roomParticipants")
@@ -60,6 +64,34 @@ export const sendMessage = mutation({
     });
 
     return messageId;
+  },
+});
+
+export const deleteMessage = mutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+    const message = await ctx.db.get(args.messageId);
+    if (!user || !message) throw new Error("Message not found");
+
+    const participant = await ctx.db
+      .query("roomParticipants")
+      .withIndex("by_room_and_user", (q) =>
+        q.eq("roomId", message.roomId).eq("userId", user._id)
+      )
+      .first();
+
+    if (message.userId !== user._id && !["owner", "moderator"].includes(participant?.role ?? "")) {
+      throw new Error("You don't have permission to delete this message");
+    }
+
+    await ctx.db.delete(message._id);
   },
 });
 

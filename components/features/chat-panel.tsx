@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 import { formatDate, getUserRoleTag } from "@/lib/utils";
 import { MessageWithUser } from "@/lib/types";
 
@@ -19,13 +19,21 @@ interface ChatPanelProps {
 export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProps) {
   const messages = useQuery(api.messages.getMessages, { roomName: roomname });
   const sendMessage = useMutation(api.messages.sendMessage);
+  const deleteMessage = useMutation(api.messages.deleteMessage);
+  const addBlockedWord = useMutation(api.moderation.addBlockedWord);
+  const removeBlockedWord = useMutation(api.moderation.removeBlockedWord);
 
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [blockedWord, setBlockedWord] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isGuest = participants.some(
-    (participant) =>
-      participant.userId === currentUser?._id && participant.role === "guest"
+  const currentParticipant = participants.find((participant) => participant.userId === currentUser?._id);
+  const isGuest = currentParticipant?.role === "guest";
+  const isOwner = currentParticipant?.role === "owner";
+  const canModerate = ["owner", "moderator"].includes(currentParticipant?.role);
+  const blockedWords = useQuery(
+    api.moderation.getBlockedWords,
+    isOwner ? { roomName: roomname } : "skip"
   );
 
   // Auto-scroll to bottom on new messages
@@ -54,6 +62,14 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
     }
   };
 
+  const handleAddBlockedWord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blockedWord.trim()) return;
+
+    await addBlockedWord({ roomName: roomname, word: blockedWord });
+    setBlockedWord("");
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -68,6 +84,8 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
             const user = message.user;
             if (!user) return null;
 
+            const canDelete = message.userId === currentUser?._id || canModerate;
+
             return (
               <div key={message._id} className="space-y-1">
                 <div className="flex items-baseline gap-2">
@@ -77,6 +95,20 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
                   <span className="text-xs text-gray-500">
                     {formatDate(message.sentAt)}
                   </span>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 text-gray-500 hover:text-destructive"
+                      onClick={() => {
+                        if (window.confirm("Delete this message?")) {
+                          deleteMessage({ messageId: message._id }).catch((error) => alert(error.message));
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
                 <p className="text-sm text-gray-300">{message.content}</p>
               </div>
@@ -84,6 +116,23 @@ export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProp
           })}
         </div>
       </ScrollArea>
+
+      {isOwner && (
+        <details className="border-t border-gray-700 p-4 text-sm text-gray-300">
+          <summary className="cursor-pointer font-medium">Blocked words</summary>
+          <form onSubmit={handleAddBlockedWord} className="mt-3 flex gap-2">
+            <Input value={blockedWord} onChange={(e) => setBlockedWord(e.target.value)} placeholder="Add word" />
+            <Button type="submit" size="sm">Add</Button>
+          </form>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {blockedWords?.map((word: string) => (
+              <Button key={word} variant="outline" size="sm" onClick={() => removeBlockedWord({ roomName: roomname, word })}>
+                {word} ×
+              </Button>
+            ))}
+          </div>
+        </details>
+      )}
 
       {/* Input */}
       <div className="p-4 border-t border-gray-700">

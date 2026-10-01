@@ -29,6 +29,7 @@ export default defineSchema({
   chatrooms: defineTable({
     name: v.string(), // ALL CAPS (matches username)
     ownerId: v.id("users"),
+    blockedWords: v.optional(v.array(v.string())),
     isActive: v.boolean(),
     createdAt: v.number(),
   }).index("by_name", ["name"]),

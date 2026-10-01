@@ -1,6 +1,53 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+async function getRoomOwner(ctx: any, roomName: string) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerkId", (q: any) => q.eq("clerkId", identity.subject))
+    .first();
+  const chatroom = await ctx.db
+    .query("chatrooms")
+    .withIndex("by_name", (q: any) => q.eq("name", roomName))
+    .first();
+
+  if (!user || !chatroom || chatroom.ownerId !== user._id) {
+    throw new Error("Only room owner can manage blocked words");
+  }
+
+  return chatroom;
+}
+
+export const getBlockedWords = query({
+  args: { roomName: v.string() },
+  handler: async (ctx, args) => (await getRoomOwner(ctx, args.roomName)).blockedWords ?? [],
+});
+
+export const addBlockedWord = mutation({
+  args: { roomName: v.string(), word: v.string() },
+  handler: async (ctx, args) => {
+    const chatroom = await getRoomOwner(ctx, args.roomName);
+    const word = args.word.trim().toLowerCase();
+    if (!word || word.length > 64) throw new Error("Blocked word must be 1-64 characters");
+
+    const blockedWords = [...new Set([...(chatroom.blockedWords ?? []), word])];
+    await ctx.db.patch(chatroom._id, { blockedWords });
+  },
+});
+
+export const removeBlockedWord = mutation({
+  args: { roomName: v.string(), word: v.string() },
+  handler: async (ctx, args) => {
+    const chatroom = await getRoomOwner(ctx, args.roomName);
+    await ctx.db.patch(chatroom._id, {
+      blockedWords: (chatroom.blockedWords ?? []).filter((word: string) => word !== args.word),
+    });
+  },
+});
+
 // Assign moderator role
 export const assignModerator = mutation({
   args: {

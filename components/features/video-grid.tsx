@@ -382,7 +382,9 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                   </p>
                   {/* Debug indicator */}
                   <p className="text-xs text-gray-400">
-                    {remoteStreams.has(user.username) ? "📡 Stream" : "⏳ Waiting"}
+                    {isCurrentUser
+                      ? localStream ? "📹 You" : "⏳ Waiting"
+                      : remoteStreams.has(user.username) ? "📡 Stream" : "⏳ Waiting"}
                   </p>
                 </div>
               </div>

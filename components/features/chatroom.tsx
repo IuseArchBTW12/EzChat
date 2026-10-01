@@ -175,6 +175,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
           <ChatPanel
             roomname={roomname}
             currentUser={currentUser}
+            participants={participants || []}
           />
         </aside>
       </div>

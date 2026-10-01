@@ -219,6 +219,21 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
       const signalKey = `${signalData._id}`;
       if (processedSignals.current.has(signalKey)) return;
 
+      const newerSignalExists = signals.some(
+        (candidate) =>
+          candidate._id !== signalData._id &&
+          candidate.fromUserId === signalData.fromUserId &&
+          candidate.type === signalData.type &&
+          candidate.createdAt > signalData.createdAt
+      );
+      if (newerSignalExists) {
+        processedSignals.current.add(signalKey);
+        deleteSignal({ signalId: signalData._id }).catch((err) => {
+          console.error("Failed to delete stale signal:", err);
+        });
+        return;
+      }
+
       const peer = peersRef.current.get(fromUsername);
       if (!peer) {
         console.log(`[WebRTC] No peer found for ${fromUsername}, cannot process signal`);
@@ -239,7 +254,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
         console.error(`[WebRTC] Failed to process signal from ${fromUsername}:`, err);
       }
     });
-  }, [signals, currentUser, deleteSignal]);
+  }, [signals, peers, currentUser, deleteSignal]);
 
   // Assign remote streams to video elements (only if not already assigned)
   useEffect(() => {

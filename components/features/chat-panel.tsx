@@ -13,15 +13,20 @@ import { MessageWithUser } from "@/lib/types";
 interface ChatPanelProps {
   roomname: string;
   currentUser: any;
+  participants: any[];
 }
 
-export function ChatPanel({ roomname, currentUser }: ChatPanelProps) {
+export function ChatPanel({ roomname, currentUser, participants }: ChatPanelProps) {
   const messages = useQuery(api.messages.getMessages, { roomName: roomname });
   const sendMessage = useMutation(api.messages.sendMessage);
 
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isGuest = participants.some(
+    (participant) =>
+      participant.userId === currentUser?._id && participant.role === "guest"
+  );
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -33,7 +38,7 @@ export function ChatPanel({ roomname, currentUser }: ChatPanelProps) {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isGuest) return;
 
     setIsSending(true);
     try {
@@ -88,19 +93,19 @@ export function ChatPanel({ roomname, currentUser }: ChatPanelProps) {
             placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            disabled={isSending}
+            disabled={isSending || isGuest}
             className="bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
           />
           <Button
             type="submit"
             size="icon"
-            disabled={isSending || !newMessage.trim()}
+            disabled={isSending || isGuest || !newMessage.trim()}
           >
             <Send className="h-4 w-4" />
           </Button>
         </form>
         <p className="text-xs text-gray-500 mt-2">
-          {currentUser?.role === "guest"
+          {isGuest
             ? "Guests can only view chat. Ask for regular status to chat."
             : "Press Enter to send"}
         </p>

@@ -34,6 +34,22 @@ export const sendSignal = mutation({
 
     if (!chatroom) throw new Error("Chatroom not found");
 
+    const pendingSignals = await ctx.db
+      .query("webrtcSignals")
+      .withIndex("by_room", (q) => q.eq("roomId", chatroom._id))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("fromUserId"), fromUser._id),
+          q.eq(q.field("toUserId"), toUser._id),
+          q.eq(q.field("type"), args.type)
+        )
+      )
+      .collect();
+
+    for (const pendingSignal of pendingSignals) {
+      await ctx.db.delete(pendingSignal._id);
+    }
+
     const signalId = await ctx.db.insert("webrtcSignals", {
       roomId: chatroom._id,
       fromUserId: fromUser._id,
@@ -92,6 +108,19 @@ export const getSignals = query({
 export const deleteSignal = mutation({
   args: { signalId: v.id("webrtcSignals") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .first();
+    const signal = await ctx.db.get(args.signalId);
+
+    if (!user || !signal || signal.toUserId !== user._id) {
+      throw new Error("Signal not found");
+    }
+
     await ctx.db.delete(args.signalId);
   },
 });

@@ -13,9 +13,10 @@
 
 @layer utilities {
   .font-display { font-family: Georgia, "Times New Roman", serif; }
-  .signal-field { background-image: linear-gradient(hsl(var(--border) / .45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / .45) 1px, transparent 1px), radial-gradient(circle at 78% 34%, hsl(var(--primary) / .26), transparent 25rem); background-size: 3rem 3rem, 3rem 3rem, auto; mask-image: linear-gradient(to bottom, black, transparent 82%); }
-  .hero-scene { --hero-far: 0px; --hero-near: 0px; --hero-scale: 1; }
-  @media (prefers-reduced-motion: no-preference) { .hero-scene > :first-child { transform: translateY(var(--hero-far)) scale(var(--hero-scale)); } .hero-room-card { transform: translateY(var(--hero-near)); } }
+  .signal-field { background-image: linear-gradient(hsl(var(--border) / .45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--border) / .45) 1px, transparent 1px); background-size: 3rem 3rem; mask-image: linear-gradient(to bottom, black, transparent 82%); }
+  .hero-scene { --hero-far: 0px; --hero-mid: 0px; --hero-near: 0px; --hero-scale: 1; --hero-door: 0px; --hero-copy: 1; }
+  .hero-copy { opacity: var(--hero-copy); }
+  @media (prefers-reduced-motion: no-preference) { .hero-far { transform: translateY(var(--hero-far)); } .hero-arch { transform: translateY(var(--hero-far)) scale(var(--hero-scale)); } .hero-mid { transform: translateY(var(--hero-mid)) scale(var(--hero-scale)); } .hero-near { transform: translateY(var(--hero-near)); } .hero-door-edge { translate: calc(var(--hero-door) * -1) 0; } }
   @media (prefers-reduced-motion: no-preference) { .signal-field { animation: signal-shift 18s linear infinite; } }
   @keyframes signal-shift { to { background-position: 3rem 3rem, 3rem 3rem, center; } }
 }

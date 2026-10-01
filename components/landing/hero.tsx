@@ -1,165 +1,52 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { SignInButton } from "@clerk/nextjs";
+import { ArrowDownRight, Radio, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Video, Users, Zap } from "lucide-react";
-import gsap from "gsap";
 
 export function Hero() {
-  const heroRef = useRef<HTMLElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const subtitleRef = useRef<HTMLParagraphElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Hero animations
-      gsap.from(titleRef.current, {
-        y: 50,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out",
-      });
-
-      gsap.from(subtitleRef.current, {
-        y: 30,
-        opacity: 0,
-        duration: 1,
-        delay: 0.2,
-        ease: "power3.out",
-      });
-
-      gsap.from(ctaRef.current, {
-        y: 30,
-        opacity: 0,
-        duration: 1,
-        delay: 0.4,
-        ease: "power3.out",
-      });
-
-      // Feature cards stagger animation
-      gsap.from(".feature-card", {
-        y: 50,
-        opacity: 0,
-        duration: 0.8,
-        delay: 0.6,
-        stagger: 0.15,
-        ease: "power3.out",
-      });
-
-      // Floating animation for gradient orbs
-      gsap.to(".gradient-orb-1", {
-        y: -30,
-        x: 20,
-        duration: 4,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
-
-      gsap.to(".gradient-orb-2", {
-        y: 30,
-        x: -20,
-        duration: 5,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-      });
-    }, heroRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section
-      ref={heroRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-blue-50 via-background to-purple-50 dark:from-gray-900 dark:via-background dark:to-gray-900"
-    >
-      {/* Animated gradient orbs */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-xl opacity-20 dark:opacity-10 gradient-orb-1" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply dark:mix-blend-lighten filter blur-xl opacity-20 dark:opacity-10 gradient-orb-2" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        {/* Main heading */}
-        <h1
-          ref={titleRef}
-          className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight"
-        >
-          Your Username.
-          <br />
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Your Chatroom.
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p
-          ref={subtitleRef}
-          className="text-xl sm:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed"
-        >
-          Create instant video chatrooms with just a username. No setup, no hassle.
-          Just claim your name and start connecting.
-        </p>
-
-        {/* CTA Buttons */}
-        <div ref={ctaRef} className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-          <SignInButton mode="modal">
-            <Button size="lg" className="text-lg px-8 py-6 bg-blue-600 hover:bg-blue-700">
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </SignInButton>
-          <Button
-            size="lg"
-            variant="outline"
-            className="text-lg px-8 py-6 border-2"
-            onClick={() => {
-              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            See How It Works
-          </Button>
+    <section className="relative isolate overflow-hidden border-b border-border">
+      <div className="pointer-events-none absolute inset-0 signal-field opacity-70" />
+      <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-end gap-12 px-4 pb-14 pt-24 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:pb-20">
+        <div className="max-w-3xl">
+          <p className="mb-7 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            <Radio className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            Drop in. Stay awhile.
+          </p>
+          <h1 className="font-display max-w-3xl text-5xl font-semibold leading-[0.93] tracking-[-0.07em] text-foreground sm:text-7xl lg:text-8xl">
+            Make a room.
+            <span className="block text-primary">Find your people.</span>
+          </h1>
+          <p className="mt-8 max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
+            EzChat is a place for live conversation: video on, chat moving, and a room that belongs to its community.
+          </p>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+            <SignInButton mode="modal">
+              <Button size="lg" className="h-13 rounded-full px-7 text-base font-semibold">
+                Enter EzChat <ArrowDownRight className="ml-2 h-5 w-5" />
+              </Button>
+            </SignInButton>
+            <button type="button" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="h-13 rounded-full border border-border px-7 text-left text-sm font-semibold transition-colors hover:bg-secondary">
+              See how rooms work
+            </button>
+          </div>
         </div>
-
-        {/* Feature Cards */}
-        <div ref={cardsRef} className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <div className="feature-card bg-card/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-border">
-            <div className="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <Video className="h-7 w-7 text-blue-600" />
+        <div className="relative mx-auto w-full max-w-md pb-2 lg:pb-8">
+          <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card p-5 shadow-[0_20px_80px_hsl(var(--foreground)/0.12)]">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">On air</p><p className="font-display mt-1 text-xl font-semibold tracking-tight">The room is open</p></div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground"><Video className="h-4 w-4" aria-hidden="true" /></span>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              Instant Video Rooms
-            </h3>
-            <p className="text-muted-foreground">
-              Start face-to-face conversations instantly. No downloads, no waiting.
-            </p>
-          </div>
-
-          <div className="feature-card bg-card/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-border">
-            <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <Users className="h-7 w-7 text-purple-600" />
+            <div className="mt-5 grid grid-cols-2 gap-3" aria-hidden="true">
+              <div className="aspect-[4/3] rounded-2xl bg-[linear-gradient(135deg,hsl(var(--secondary))_0%,hsl(var(--accent))_100%)]" />
+              <div className="aspect-[4/3] rounded-2xl bg-[radial-gradient(circle_at_70%_25%,hsl(var(--primary)/.75)_0%,transparent_32%),hsl(var(--secondary))]" />
+              <div className="aspect-[4/3] rounded-2xl bg-[linear-gradient(45deg,hsl(var(--accent))_0%,hsl(var(--secondary))_65%)]" />
+              <div className="flex aspect-[4/3] items-end rounded-2xl bg-foreground p-3 text-background"><span className="text-[10px] font-bold uppercase tracking-[0.16em]">Your turn</span></div>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              Role-Based Control
-            </h3>
-            <p className="text-muted-foreground">
-              Manage your room with moderators, regulars, and guests.
-            </p>
+            <div className="mt-5 flex items-center justify-between text-xs font-medium text-muted-foreground"><span>CAM + CHAT</span><span className="text-primary">LIVE</span></div>
           </div>
-
-          <div className="feature-card bg-card/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-border">
-            <div className="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <Zap className="h-7 w-7 text-green-600" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">
-              Lightning Fast
-            </h3>
-            <p className="text-muted-foreground">
-              Powered by WebRTC for seamless, real-time video connections.
-            </p>
-          </div>
+          <p className="mt-4 text-right text-xs uppercase tracking-[0.18em] text-muted-foreground">Built for the conversation, not the feed</p>
         </div>
       </div>
     </section>

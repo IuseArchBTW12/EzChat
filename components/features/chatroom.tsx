@@ -78,12 +78,12 @@ export function Chatroom({ roomname }: ChatroomProps) {
   // Show loading state while creating chatroom
   if (isCreating || chatroom === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] mb-2">
             {isCreating ? "Creating Chatroom..." : "Loading..."}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {isCreating ? `Setting up ${roomname}` : "Please wait"}
           </p>
         </div>
@@ -93,12 +93,12 @@ export function Chatroom({ roomname }: ChatroomProps) {
 
   if (!chatroom) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] mb-2">
             Chatroom Not Found
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             The chatroom &quot;{roomname}&quot; doesn&apos;t exist yet
           </p>
           <Button onClick={() => router.push("/")}>
@@ -112,12 +112,12 @@ export function Chatroom({ roomname }: ChatroomProps) {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] mb-2">
             Access Denied
           </h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={() => router.push("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Directory
@@ -128,32 +128,32 @@ export function Chatroom({ roomname }: ChatroomProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900">
+    <div className="h-[100dvh] flex flex-col bg-background">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+      <header className="border-b border-border bg-card px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push("/")}
-              className="text-gray-300 hover:text-white"
+              className="rounded-full text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <h1 className="text-xl font-bold text-white">{roomname}</h1>
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Live room</p><h1 className="font-display text-xl font-semibold tracking-[-0.035em]">{roomname}</h1></div>
           </div>
-          <p className="text-sm text-gray-400">
+          <p className="hidden text-sm text-muted-foreground sm:block">
             Owner: {chatroom.ownerUsername}
           </p>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         {/* User List - Left */}
-        <aside className="w-60 bg-gray-800 border-r border-gray-700">
+        <aside className="hidden w-60 border-r border-border bg-card xl:block">
           <UserList
             participants={participants || []}
             currentUser={currentUser}
@@ -162,7 +162,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
         </aside>
 
         {/* Video Grid - Center */}
-        <main className="flex-1 bg-gray-900">
+        <main className="min-h-0 flex-1 bg-background lg:min-w-0">
           <VideoGrid
             participants={participants || []}
             currentUser={currentUser}
@@ -171,7 +171,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
         </main>
 
         {/* Chat Panel - Right */}
-        <aside className="w-80 bg-gray-800 border-l border-gray-700">
+        <aside className="h-[38dvh] w-full border-t border-border bg-card lg:h-auto lg:w-80 lg:border-l lg:border-t-0">
           <ChatPanel
             roomname={roomname}
             currentUser={currentUser}

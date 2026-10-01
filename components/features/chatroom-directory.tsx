@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Users, Video, Star } from "lucide-react";
+import { Users, Video, Star, Radio } from "lucide-react";
 import { ChatroomWithDetails } from "@/lib/types";
 import { UsernameModal } from "./username-modal";
 
@@ -92,17 +92,14 @@ export function ChatroomDirectory() {
     }
   };
 
-  // Debug logging
-  console.log("ChatroomDirectory - currentUser:", currentUser);
-
   const displayedRooms = activeTab === "favorites" ? favoriteRooms : chatrooms;
   const favoriteRoomNames = new Set(favoriteRooms?.map((r: ChatroomWithDetails) => r.name) || []);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 py-4 sm:py-10">
       {/* Loading State */}
       {currentUser === undefined && (
-        <Card>
+        <Card className="rounded-[1.5rem] border-border shadow-none">
           <CardContent className="py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -114,7 +111,7 @@ export function ChatroomDirectory() {
 
       {/* User Not Found - shouldn't happen but handle it */}
       {currentUser === null && (
-        <Card>
+        <Card className="rounded-[1.5rem] border-border shadow-none">
           <CardContent className="py-12">
             <div className="text-center">
               <p className="text-muted-foreground mb-4">Setting up your account...</p>
@@ -126,9 +123,10 @@ export function ChatroomDirectory() {
 
       {/* Create Chatroom Section - show if user has no username */}
       {currentUser && currentUser.username === "" && (
-        <Card>
+        <Card className="rounded-[1.5rem] border-border shadow-none">
           <CardHeader>
-            <CardTitle>Claim Your Username</CardTitle>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Your home base</p>
+            <CardTitle className="font-display text-3xl tracking-[-0.04em]">Claim your room name</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleClaimUsername} className="space-y-4">
@@ -138,7 +136,7 @@ export function ChatroomDirectory() {
                   placeholder="YOURNAME"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value.toUpperCase())}
-                  className="text-center text-lg font-bold"
+                  className="h-12 rounded-xl text-center text-lg font-bold tracking-[0.1em]"
                   disabled={isCreating}
                 />
                 <p className="text-sm text-muted-foreground mt-2">
@@ -148,7 +146,7 @@ export function ChatroomDirectory() {
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
               )}
-              <Button type="submit" className="w-full" disabled={isCreating}>
+              <Button type="submit" className="w-full rounded-full" disabled={isCreating}>
                 {isCreating ? "Creating..." : "Create My Chatroom"}
               </Button>
             </form>
@@ -158,13 +156,14 @@ export function ChatroomDirectory() {
 
       {/* My Chatroom */}
       {currentUser?.username && (
-        <Card className="border-primary">
+        <Card className="border-primary bg-primary text-primary-foreground shadow-none">
           <CardHeader>
-            <CardTitle>My Chatroom</CardTitle>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em]">Your room</p>
+            <CardTitle className="font-display text-3xl tracking-[-0.04em]">{currentUser.username}</CardTitle>
           </CardHeader>
           <CardContent>
             <Link href={`/${currentUser.username}`}>
-              <Button className="w-full" size="lg">
+              <Button variant="secondary" className="w-full rounded-full" size="lg">
                 <Video className="mr-2 h-5 w-5" />
                 Enter {currentUser.username}
               </Button>
@@ -174,14 +173,15 @@ export function ChatroomDirectory() {
       )}
 
       {/* Chatroom Directory */}
-      <Card>
+      <Card className="overflow-hidden rounded-[1.5rem] border-border shadow-none">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Chatrooms</CardTitle>
+            <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><Radio className="h-3.5 w-3.5" /> Live directory</p><CardTitle className="font-display mt-2 text-3xl tracking-[-0.04em]">Find a room</CardTitle></div>
             <div className="flex gap-2">
               <Button
                 variant={activeTab === "all" ? "default" : "outline"}
                 size="sm"
+                className="rounded-full"
                 onClick={() => setActiveTab("all")}
               >
                 All Rooms
@@ -189,6 +189,7 @@ export function ChatroomDirectory() {
               <Button
                 variant={activeTab === "favorites" ? "default" : "outline"}
                 size="sm"
+                className="rounded-full"
                 onClick={() => setActiveTab("favorites")}
               >
                 <Star className="h-4 w-4 mr-1" />
@@ -217,13 +218,13 @@ export function ChatroomDirectory() {
               <div
                 key={room._id}
                 onClick={(e) => handleRoomClick(room.name, e)}
-                className="cursor-pointer group"
+                className="group cursor-pointer"
               >
-                <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent transition-colors">
+                <div className="flex items-center justify-between border-t border-border px-1 py-5 transition-colors hover:bg-secondary sm:px-4">
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg">{room.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Owner: {room.ownerUsername}
+                    <h3 className="font-display text-2xl font-semibold tracking-[-0.035em]">{room.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Hosted by {room.ownerUsername}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">

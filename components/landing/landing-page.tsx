@@ -8,7 +8,7 @@ import { HowItWorks } from "@/components/landing/how-it-works";
 import { CTA } from "@/components/landing/cta";
 import { Footer } from "@/components/landing/footer";
 import { ChatroomDirectory } from "@/components/features/chatroom-directory";
-import { Video, Menu } from "lucide-react";
+import { Video, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserSync } from "@/components/user-sync";
@@ -21,29 +21,23 @@ export function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                <Video className="h-6 w-6 text-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Video className="h-4 w-4" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                EzChat
+              <span className="font-display text-lg font-semibold tracking-[-0.04em]">
+                EZCHAT
               </span>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <a
-                href="#features"
-                className="text-foreground/70 hover:text-blue-600 font-medium transition-colors"
-              >
+              <a href="#features" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                 Features
               </a>
-              <a
-                href="#how-it-works"
-                className="text-foreground/70 hover:text-blue-600 font-medium transition-colors"
-              >
+              <a href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
                 How It Works
               </a>
             </div>
@@ -53,7 +47,7 @@ export function LandingPage() {
               <ThemeToggle />
               <SignedOut>
                 <SignInButton mode="modal">
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+                  <Button className="rounded-full px-5">
                     Sign In
                   </Button>
                 </SignInButton>
@@ -64,28 +58,28 @@ export function LandingPage() {
 
               {/* Mobile menu button */}
               <button
-                className="md:hidden p-2 text-foreground"
+                className="rounded-full p-2 text-foreground hover:bg-secondary md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
-                <Menu className="h-6 w-6" />
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-border">
+            <div className="border-t border-border py-4 md:hidden">
               <div className="flex flex-col gap-4">
                 <a
                   href="#features"
-                  className="text-foreground/70 hover:text-blue-600 font-medium"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Features
                 </a>
                 <a
                   href="#how-it-works"
-                  className="text-foreground/70 hover:text-blue-600 font-medium"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   How It Works

@@ -23,6 +23,9 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [audioInputs, setAudioInputs] = useState<MediaDeviceInfo[]>([]);
+  const [videoInputs, setVideoInputs] = useState<MediaDeviceInfo[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const peersRef = useRef<Map<string, Peer.Instance>>(new Map());
@@ -33,6 +36,30 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const deleteSignal = useMutation(api.webrtc.deleteSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
   const signals = useQuery(api.webrtc.getSignals, { roomName: roomname });
+
+  useEffect(() => {
+    const loadDevices = () => navigator.mediaDevices.enumerateDevices().then((devices) => {
+      setAudioInputs(devices.filter((device) => device.kind === "audioinput"));
+      setVideoInputs(devices.filter((device) => device.kind === "videoinput"));
+    });
+    loadDevices();
+    navigator.mediaDevices.addEventListener("devicechange", loadDevices);
+    return () => navigator.mediaDevices.removeEventListener("devicechange", loadDevices);
+  }, []);
+
+  useEffect(() => {
+    if (!localStream || isMuted) return;
+    const context = new AudioContext();
+    const analyser = context.createAnalyser();
+    const source = context.createMediaStreamSource(localStream);
+    const samples = new Uint8Array(analyser.fftSize);
+    source.connect(analyser);
+    const timer = window.setInterval(() => {
+      analyser.getByteTimeDomainData(samples);
+      setIsSpeaking(samples.some((sample) => Math.abs(sample - 128) > 8));
+    }, 150);
+    return () => { window.clearInterval(timer); context.close(); };
+  }, [localStream, isMuted]);
 
   const maxCams = getMaxCams(currentUser?.tier || "free");
   const maxVideos = maxCams.rows * maxCams.cols;
@@ -285,6 +312,21 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     }
   };
 
+  const changeInput = async (kind: "audio" | "video", deviceId: string) => {
+    if (!localStream) return;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: kind === "audio" ? { deviceId: { exact: deviceId } } : false,
+      video: kind === "video" ? { deviceId: { exact: deviceId } } : false,
+    });
+    const oldTrack = kind === "audio" ? localStream.getAudioTracks()[0] : localStream.getVideoTracks()[0];
+    const newTrack = kind === "audio" ? stream.getAudioTracks()[0] : stream.getVideoTracks()[0];
+    if (!oldTrack || !newTrack) return;
+    peersRef.current.forEach((peer) => peer.replaceTrack(oldTrack, newTrack, localStream));
+    localStream.removeTrack(oldTrack);
+    oldTrack.stop();
+    localStream.addTrack(newTrack);
+  };
+
   // Calculate grid layout - filter out invalid participants
   const visibleParticipants = participants
     .filter((p) => p.user && p.user.username && p.user.username.trim() !== '')
@@ -322,7 +364,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
             return (
               <div
                 key={participant._id}
-                className="relative bg-gray-800 rounded-lg overflow-hidden"
+                className={`relative overflow-hidden rounded-lg bg-gray-800 ${isCurrentUser && isSpeaking ? "ring-2 ring-green-400" : ""}`}
                 style={{
                   aspectRatio: '16 / 9',
                 }}
@@ -369,6 +411,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                   <p className="text-white text-sm font-medium">
                     {user.username}
                     {isCurrentUser && " (You)"}
+                    {isCurrentUser && isMuted && <MicOff className="ml-2 inline h-4 w-4 text-red-400" />}
                   </p>
                   {/* Debug indicator */}
                   <p className="text-xs text-gray-400">
@@ -399,6 +442,12 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
           <button type="button" aria-label={screenStream ? "Stop screen sharing" : "Share screen"} onClick={() => screenStream ? stopSharing(screenStream) : shareScreen()} className="rounded-full p-3 text-white hover:bg-gray-700">
             <MonitorUp />
           </button>
+          <select aria-label="Microphone" className="max-w-32 rounded bg-gray-700 px-2 text-xs text-white" onChange={(event) => changeInput("audio", event.target.value)}>
+            {audioInputs.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}
+          </select>
+          <select aria-label="Camera" className="max-w-32 rounded bg-gray-700 px-2 text-xs text-white" onChange={(event) => changeInput("video", event.target.value)}>
+            {videoInputs.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>)}
+          </select>
         </div>
       )}
     </div>

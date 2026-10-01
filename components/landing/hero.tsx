@@ -1,10 +1,27 @@
 "use client";
 
 import { SignInButton } from "@clerk/nextjs";
+import Image from "next/image";
 import { ArrowDownRight, Radio, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect, useRef } from "react";
 
 export function Hero() {
+  const sceneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      sceneRef.current?.style.setProperty("--hero-scroll", String(Math.min(window.scrollY / window.innerHeight, 1)));
+    };
+    const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); if (frame) window.cancelAnimationFrame(frame); };
+  }, []);
+
   return (
     <section className="relative isolate overflow-hidden border-b border-border">
       <div className="pointer-events-none absolute inset-0 signal-field opacity-70" />
@@ -32,17 +49,18 @@ export function Hero() {
             </button>
           </div>
         </div>
-        <div className="relative mx-auto w-full max-w-md pb-2 lg:pb-8">
-          <div className="relative overflow-hidden rounded-[2rem] border border-border bg-card p-5 shadow-[0_20px_80px_hsl(var(--foreground)/0.12)]">
+        <div ref={sceneRef} className="hero-scene relative mx-auto w-full max-w-md pb-2 lg:pb-8">
+          <div className="absolute -right-8 -top-10 aspect-[4/5] w-[88%] overflow-hidden rounded-[2rem] border border-border/70 bg-foreground shadow-[0_24px_80px_hsl(var(--foreground)/0.22)]">
+            <Image src="/images/ezchat-kitchen-call.png" alt="Friends enjoying a video conversation at a kitchen table" fill sizes="(min-width: 1024px) 380px, 85vw" priority className="object-cover opacity-85" />
+            <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent" />
+          </div>
+          <div className="hero-room-card relative mt-24 overflow-hidden rounded-[2rem] border border-border bg-card/95 p-5 shadow-[0_20px_80px_hsl(var(--foreground)/0.16)] backdrop-blur-sm">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">On air</p><p className="font-display mt-1 text-xl font-semibold tracking-tight">The room is open</p></div>
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground"><Video className="h-4 w-4" aria-hidden="true" /></span>
             </div>
-            <div className="mt-5 grid grid-cols-2 gap-3" aria-hidden="true">
-              <div className="aspect-[4/3] rounded-2xl bg-[linear-gradient(135deg,hsl(var(--secondary))_0%,hsl(var(--accent))_100%)]" />
-              <div className="aspect-[4/3] rounded-2xl bg-[radial-gradient(circle_at_70%_25%,hsl(var(--primary)/.75)_0%,transparent_32%),hsl(var(--secondary))]" />
-              <div className="aspect-[4/3] rounded-2xl bg-[linear-gradient(45deg,hsl(var(--accent))_0%,hsl(var(--secondary))_65%)]" />
-              <div className="flex aspect-[4/3] items-end rounded-2xl bg-foreground p-3 text-background"><span className="text-[10px] font-bold uppercase tracking-[0.16em]">Your turn</span></div>
+            <div className="mt-5 overflow-hidden rounded-2xl bg-secondary">
+              <Image src="/images/ezchat-night-room.png" alt="Friends gathered for a live video chat" width={1536} height={1024} className="aspect-[16/9] w-full object-cover" />
             </div>
             <div className="mt-5 flex items-center justify-between text-xs font-medium text-muted-foreground"><span>CAM + CHAT</span><span className="text-primary">LIVE</span></div>
           </div>

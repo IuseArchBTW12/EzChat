@@ -319,3 +319,16 @@ export const toggleCamera = mutation({
     }
   },
 });
+
+export const updateMediaState = mutation({
+  args: { roomName: v.string(), isMuted: v.boolean(), isSpeaking: v.boolean() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject)).first();
+    const room = await ctx.db.query("chatrooms").withIndex("by_name", (q) => q.eq("name", args.roomName)).first();
+    if (!user || !room) throw new Error("User or chatroom not found");
+    const participant = await ctx.db.query("roomParticipants").withIndex("by_room_and_user", (q) => q.eq("roomId", room._id).eq("userId", user._id)).first();
+    if (participant) await ctx.db.patch(participant._id, { isMuted: args.isMuted, isSpeaking: args.isSpeaking });
+  },
+});

@@ -32,9 +32,11 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   const processedSignals = useRef<Set<string>>(new Set());
   const receivedOffers = useRef<Set<string>>(new Set());
   const cameraStatusSet = useRef(false);
+  const speakingState = useRef(false);
   const sendSignal = useMutation(api.webrtc.sendSignal);
   const deleteSignal = useMutation(api.webrtc.deleteSignal);
   const toggleCamera = useMutation(api.chatrooms.toggleCamera);
+  const updateMediaState = useMutation(api.chatrooms.updateMediaState);
   const signals = useQuery(api.webrtc.getSignals, { roomName: roomname });
 
   useEffect(() => {
@@ -56,10 +58,15 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     source.connect(analyser);
     const timer = window.setInterval(() => {
       analyser.getByteTimeDomainData(samples);
-      setIsSpeaking(samples.some((sample) => Math.abs(sample - 128) > 8));
+      const speaking = samples.some((sample) => Math.abs(sample - 128) > 8);
+      setIsSpeaking(speaking);
+      if (speaking !== speakingState.current) {
+        speakingState.current = speaking;
+        updateMediaState({ roomName: roomname, isMuted, isSpeaking: speaking }).catch(console.error);
+      }
     }, 150);
     return () => { window.clearInterval(timer); context.close(); };
-  }, [localStream, isMuted]);
+  }, [localStream, isMuted, roomname, updateMediaState]);
 
   const maxCams = getMaxCams(currentUser?.tier || "free");
   const maxVideos = maxCams.rows * maxCams.cols;
@@ -277,6 +284,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
     const nextMuted = !isMuted;
     localStream?.getAudioTracks().forEach((track) => { track.enabled = !nextMuted; });
     setIsMuted(nextMuted);
+    updateMediaState({ roomName: roomname, isMuted: nextMuted, isSpeaking: false }).catch(console.error);
   };
 
   const toggleVideo = () => {
@@ -364,7 +372,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
             return (
               <div
                 key={participant._id}
-                className={`relative overflow-hidden rounded-lg bg-gray-800 ${isCurrentUser && isSpeaking ? "ring-2 ring-green-400" : ""}`}
+                className={`relative overflow-hidden rounded-lg bg-gray-800 ${(isCurrentUser ? isSpeaking : participant.isSpeaking) ? "ring-2 ring-green-400" : ""}`}
                 style={{
                   aspectRatio: '16 / 9',
                 }}
@@ -411,7 +419,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
                   <p className="text-white text-sm font-medium">
                     {user.username}
                     {isCurrentUser && " (You)"}
-                    {isCurrentUser && isMuted && <MicOff className="ml-2 inline h-4 w-4 text-red-400" />}
+                    {(isCurrentUser ? isMuted : participant.isMuted) && <MicOff className="ml-2 inline h-4 w-4 text-red-400" />}
                   </p>
                   {/* Debug indicator */}
                   <p className="text-xs text-gray-400">

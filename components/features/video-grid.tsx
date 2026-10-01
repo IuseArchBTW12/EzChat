@@ -36,10 +36,11 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
   // Get local video stream
   useEffect(() => {
     let mounted = true;
+    let stream: MediaStream | null = null;
 
     const getCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 640 },
             height: { ideal: 360 },
@@ -67,7 +68,7 @@ export function VideoGrid({ participants, currentUser, roomname }: VideoGridProp
 
     return () => {
       mounted = false;
-      localStream?.getTracks().forEach((track) => track.stop());
+      stream?.getTracks().forEach((track) => track.stop());
     };
   }, []); // Empty array - only run once on mount
 

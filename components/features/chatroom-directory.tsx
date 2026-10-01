@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -225,42 +226,32 @@ export function ChatroomDirectory() {
             </div>
           )}
 
-          <div className="grid gap-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {displayedRooms?.map((room: ChatroomWithDetails) => (
-              <div
+              <article
                 key={room._id}
                 onClick={(e) => handleRoomClick(room.name, e)}
-                className="group cursor-pointer"
+                className="group cursor-pointer overflow-hidden rounded-2xl border border-border bg-background transition-transform hover:-translate-y-1 hover:shadow-xl"
               >
-                <div className="flex items-center justify-between border-t border-border px-1 py-5 transition-colors hover:bg-secondary sm:px-4">
-                  <div className="flex-1">
-                    <h3 className="font-display text-2xl font-semibold tracking-[-0.035em]">{room.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                      Hosted by {room.ownerUsername} · live conversation
-                    </p>
+                <div className="relative aspect-[16/8] overflow-hidden bg-[#17140f]">
+                  {room.imageUrl ? <img src={room.imageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : <div className="flex h-full items-end bg-[radial-gradient(circle_at_70%_20%,hsl(var(--primary)/.35),transparent_45%)] p-5"><p className="font-display text-4xl font-semibold tracking-[-.06em] text-[#f6f2ea]">{room.name}</p></div>}
+                  <span className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.16em] text-white"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> Live</span>
+                  <Button variant="ghost" size="icon" className="absolute right-2 top-2 h-8 w-8 rounded-full bg-black/60 text-white hover:bg-black/80 hover:text-primary" onClick={(e) => handleToggleFavorite(room.name, favoriteRoomNames.has(room.name), e)}>
+                    <Star className={`h-4 w-4 ${favoriteRoomNames.has(room.name) ? "fill-primary text-primary" : ""}`} />
+                  </Button>
+                </div>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div><h3 className="font-display text-2xl font-semibold tracking-[-0.035em]">{room.name}</h3><p className="mt-1 text-xs text-muted-foreground">Hosted by {room.ownerUsername}</p></div>
+                    <ArrowUpRight className="mt-1 h-5 w-5 text-primary transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span className="text-sm">{room.participantCount}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => handleToggleFavorite(room.name, favoriteRoomNames.has(room.name), e)}
-                    >
-                      <Star
-                        className={`h-5 w-5 ${
-                          favoriteRoomNames.has(room.name)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-muted-foreground group-hover:text-yellow-400"
-                        }`}
-                      />
-                    </Button>
+                  <p className="mt-4 min-h-10 text-sm leading-5 text-muted-foreground">{room.description || "A live room waiting for its people."}</p>
+                  <div className="mt-5 flex items-center gap-4 border-t border-border pt-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Users className="h-4 w-4 text-primary" /> {room.memberCount} {room.memberCount === 1 ? "member" : "members"}</span>
+                    <span>{room.participantCount} here now</span>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </CardContent>

@@ -6,10 +6,11 @@ import { useEffect, useState } from "react";
 import { UserList } from "./user-list";
 import { VideoGrid } from "./video-grid";
 import { ChatPanel } from "./chat-panel";
+import { RoomProfileDialog } from "./room-profile-dialog";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, UserPlus, Users } from "lucide-react";
 
 interface ChatroomProps {
   roomname: string;
@@ -24,10 +25,13 @@ export function Chatroom({ roomname }: ChatroomProps) {
   const getOrCreateChatroom = useMutation(api.chatrooms.getOrCreateChatroom);
   const joinChatroom = useMutation(api.chatrooms.joinChatroom);
   const leaveChatroom = useMutation(api.chatrooms.leaveChatroom);
+  const joinRoomMembership = useMutation(api.chatrooms.joinRoomMembership);
+  const membership = useQuery(api.chatrooms.getRoomMembership, { roomName: roomname });
 
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const isOwner = currentUser?._id === chatroom?.ownerId;
 
   // Auto-create chatroom if it doesn't exist
   useEffect(() => {
@@ -144,9 +148,7 @@ export function Chatroom({ roomname }: ChatroomProps) {
             </Button>
             <div><p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">Live now</p><h1 className="font-display text-2xl font-semibold tracking-[-0.035em]">{roomname}</h1></div>
           </div>
-          <p className="hidden rounded-full border border-white/10 px-3 py-1 text-xs text-[#f6f2ea]/60 sm:block">
-            Hosted by {chatroom.ownerUsername}
-          </p>
+          <div className="flex items-center gap-2"><span className="hidden items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-xs text-[#f6f2ea]/60 sm:inline-flex"><Users className="h-3.5 w-3.5 text-primary" />{membership?.memberCount ?? chatroom.memberCount} members</span>{isOwner ? <RoomProfileDialog roomname={roomname} description={chatroom.description} imageUrl={chatroom.imageUrl} /> : <Button size="sm" disabled={membership?.isMember} onClick={() => joinRoomMembership({ roomName: roomname }).catch((err) => alert(err.message))} className="rounded-full">{membership?.isMember ? "Member" : <><UserPlus className="mr-2 h-3.5 w-3.5" />Join room</>}</Button>}</div>
         </div>
       </header>
 

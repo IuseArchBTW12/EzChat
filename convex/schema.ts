@@ -31,9 +31,19 @@ export default defineSchema({
     ownerId: v.id("users"),
     blockedWords: v.optional(v.array(v.string())),
     isChatLocked: v.optional(v.boolean()),
+    description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
     isActive: v.boolean(),
     createdAt: v.number(),
   }).index("by_name", ["name"]),
+
+  roomMembers: defineTable({
+    roomId: v.id("chatrooms"),
+    userId: v.id("users"),
+    joinedAt: v.number(),
+  })
+    .index("by_room", ["roomId"])
+    .index("by_room_and_user", ["roomId", "userId"]),
 
   // Room participants & roles
   roomParticipants: defineTable({

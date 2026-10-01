@@ -7,6 +7,7 @@ export interface MessageWithUser extends Doc<"messages"> {
 
 export interface ChatroomWithDetails extends Doc<"chatrooms"> {
   participantCount: number;
+  memberCount: number;
   ownerUsername: string;
 }
 

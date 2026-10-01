@@ -20,11 +20,16 @@ export const getAllChatrooms = query({
 
         const participantsWithCamera = participants.filter((p) => p.hasCameraOn === true);
         const owner = await ctx.db.get(room.ownerId);
+        const members = await ctx.db
+          .query("roomMembers")
+          .withIndex("by_room", (q) => q.eq("roomId", room._id))
+          .collect();
 
         return {
           ...room,
           participantCount: participants.length,
           cameraCount: participantsWithCamera.length,
+          memberCount: members.length,
           ownerUsername: owner?.username || "Unknown",
         };
       })
@@ -99,6 +104,12 @@ export const getOrCreateChatroom = mutation({
       hasCameraOn: false,
     });
 
+    await ctx.db.insert("roomMembers", {
+      roomId,
+      userId: ownerId,
+      joinedAt: Date.now(),
+    });
+
     return roomId;
   },
 });
@@ -116,9 +127,15 @@ export const getChatroomByName = query({
 
     const owner = await ctx.db.get(chatroom.ownerId);
 
+    const members = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room", (q) => q.eq("roomId", chatroom._id))
+      .collect();
+
     return {
       ...chatroom,
       ownerUsername: owner?.username || "Unknown",
+      memberCount: members.length,
     };
   },
 });
@@ -330,5 +347,52 @@ export const updateMediaState = mutation({
     if (!user || !room) throw new Error("User or chatroom not found");
     const participant = await ctx.db.query("roomParticipants").withIndex("by_room_and_user", (q) => q.eq("roomId", room._id).eq("userId", user._id)).first();
     if (participant) await ctx.db.patch(participant._id, { isMuted: args.isMuted, isSpeaking: args.isSpeaking });
+  },
+});
+
+export const joinRoomMembership = mutation({
+  args: { roomName: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject)).first();
+    const room = await ctx.db.query("chatrooms").withIndex("by_name", (q) => q.eq("name", args.roomName)).first();
+    if (!user || !room) throw new Error("Room not found");
+    const existing = await ctx.db.query("roomMembers").withIndex("by_room_and_user", (q) => q.eq("roomId", room._id).eq("userId", user._id)).first();
+    if (!existing) await ctx.db.insert("roomMembers", { roomId: room._id, userId: user._id, joinedAt: Date.now() });
+  },
+});
+
+export const getRoomMembership = query({
+  args: { roomName: v.string() },
+  handler: async (ctx, args) => {
+    const room = await ctx.db.query("chatrooms").withIndex("by_name", (q) => q.eq("name", args.roomName)).first();
+    if (!room) return { memberCount: 0, isMember: false };
+    const members = await ctx.db.query("roomMembers").withIndex("by_room", (q) => q.eq("roomId", room._id)).collect();
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { memberCount: members.length, isMember: false };
+    const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject)).first();
+    const membership = user ? await ctx.db.query("roomMembers").withIndex("by_room_and_user", (q) => q.eq("roomId", room._id).eq("userId", user._id)).first() : null;
+    return { memberCount: members.length, isMember: Boolean(membership) };
+  },
+});
+
+export const updateRoomProfile = mutation({
+  args: { roomName: v.string(), description: v.string(), imageUrl: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+    const user = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject)).first();
+    const room = await ctx.db.query("chatrooms").withIndex("by_name", (q) => q.eq("name", args.roomName)).first();
+    if (!user || !room || room.ownerId !== user._id) throw new Error("Only the room owner can edit its profile");
+    const description = args.description.trim();
+    const imageUrl = args.imageUrl.trim();
+    if (description.length > 280) throw new Error("Description must be 280 characters or fewer");
+    if (imageUrl.length > 2048) throw new Error("Image URL is too long");
+    if (imageUrl) {
+      const url = new URL(imageUrl);
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error("Image URL must use http or https");
+    }
+    await ctx.db.patch(room._id, { description: description || undefined, imageUrl: imageUrl || undefined });
   },
 });

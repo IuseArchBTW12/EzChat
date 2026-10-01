@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "EzChat - Video Chatrooms",
+  title: "Foyer - Live rooms for real conversation",
   description: "Video chatroom platform where usernames are chatrooms",
 };
 

@@ -9,11 +9,12 @@ import { CTA } from "@/components/landing/cta";
 import { Footer } from "@/components/landing/footer";
 import { RoomScene } from "@/components/landing/room-scene";
 import { ChatroomDirectory } from "@/components/features/chatroom-directory";
-import { Video, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserSync } from "@/components/user-sync";
 import Link from "next/link";
+import { Brand } from "@/components/brand";
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,14 +26,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Video className="h-4 w-4" />
-              </div>
-              <span className="font-display text-lg font-semibold tracking-[-0.04em]">
-                EZCHAT
-              </span>
-            </div>
+            <Brand />
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">

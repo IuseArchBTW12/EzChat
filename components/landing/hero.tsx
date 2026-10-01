@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useRef } from "react";
 
 export function Hero() {
+  const heroRef = useRef<HTMLElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -14,9 +15,13 @@ export function Hero() {
     let frame = 0;
     const update = () => {
       frame = 0;
-      const progress = Math.min(window.scrollY / window.innerHeight, 1);
-      sceneRef.current?.style.setProperty("--hero-far", `${-72 * progress}px`);
-      sceneRef.current?.style.setProperty("--hero-near", `${-28 * progress}px`);
+      const hero = heroRef.current;
+      if (!hero) return;
+      const travel = hero.offsetHeight - window.innerHeight;
+      const progress = Math.min(Math.max(-hero.getBoundingClientRect().top / travel, 0), 1);
+      sceneRef.current?.style.setProperty("--hero-far", `${-120 * progress}px`);
+      sceneRef.current?.style.setProperty("--hero-near", `${-52 * progress}px`);
+      sceneRef.current?.style.setProperty("--hero-scale", String(1 + progress * 0.1));
     };
     const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(update); };
     update();
@@ -25,9 +30,9 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative isolate overflow-hidden border-b border-border">
+    <section ref={heroRef} className="relative isolate h-[155svh] overflow-hidden border-b border-border">
       <div className="pointer-events-none absolute inset-0 signal-field opacity-70" />
-      <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-end gap-12 px-4 pb-14 pt-24 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:pb-20">
+      <div className="relative top-16 mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-end gap-12 px-4 pb-14 pt-24 sm:sticky sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:px-8 lg:pb-20">
         <div className="max-w-3xl">
           <p className="mb-7 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             <Radio className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
@@ -38,12 +43,12 @@ export function Hero() {
             <span className="block text-primary">Find your people.</span>
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-            EzChat is a place for live conversation: video on, chat moving, and a room that belongs to its community.
+            Foyer is a place for live conversation: video on, chat moving, and a room that belongs to its community.
           </p>
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
             <SignInButton mode="modal">
               <Button size="lg" className="h-13 rounded-full px-7 text-base font-semibold">
-                Enter EzChat <ArrowDownRight className="ml-2 h-5 w-5" />
+                Enter Foyer <ArrowDownRight className="ml-2 h-5 w-5" />
               </Button>
             </SignInButton>
             <button type="button" onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="h-13 rounded-full border border-border px-7 text-left text-sm font-semibold transition-colors hover:bg-secondary">
